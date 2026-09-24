@@ -1,7 +1,7 @@
 // Yadro sxemasi (PRD 9.1–9.2). Har jadvalda tenant_id; ajratish RLS bilan (migrations/*_rls.sql).
 import { sql } from 'drizzle-orm';
 import {
-  bigint, boolean, char, foreignKey, pgTable, primaryKey, text, timestamp, unique, uuid,
+  bigint, boolean, char, foreignKey, index, jsonb, pgTable, primaryKey, text, timestamp, unique, uuid,
 } from 'drizzle-orm/pg-core';
 
 const id = () => uuid('id').primaryKey().default(sql`gen_random_uuid()`);
@@ -102,3 +102,19 @@ export const userRoles = pgTable('user_roles', {
   foreignKey({ columns: [t.tenantId, t.userId], foreignColumns: [users.tenantId, users.id] }).onDelete('cascade'),
   foreignKey({ columns: [t.tenantId, t.roleId], foreignColumns: [roles.tenantId, roles.id] }).onDelete('cascade'),
 ]);
+
+// CORE-06: kim, qachon, nimani ko'rgan yoki o'zgartirgan. O'chirilmas (migrations/*_audit_guard.sql).
+export const auditLog = pgTable('audit_log', {
+  id: id(),
+  tenantId: tenantId(),
+  at: timestamp('at', { withTimezone: true }).notNull().defaultNow(),
+  actorUserId: uuid('actor_user_id'),
+  // read | create | update | cancel | approve | denied | export | login
+  action: text('action').notNull(),
+  entity: text('entity').notNull(),
+  entityId: text('entity_id'),
+  oldValue: jsonb('old_value'),
+  newValue: jsonb('new_value'),
+  ip: text('ip'),
+  meta: jsonb('meta'),
+}, (t) => [index('audit_log_tenant_at_idx').on(t.tenantId, t.at)]);

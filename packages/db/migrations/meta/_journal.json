@@ -15,6 +15,20 @@
       "when": 1790262494233,
       "tag": "0001_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790265506088,
+      "tag": "0002_audit_log",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1790265511237,
+      "tag": "0003_audit_guard",
+      "breakpoints": true
     }
   ]
 }

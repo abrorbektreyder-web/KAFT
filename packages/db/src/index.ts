@@ -12,7 +12,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function createDb(url: string) {
   // prepare:false — Supabase pooler (Supavisor) bilan mos
-  const sql = postgres(url, { prepare: false, max: 5 });
+  const sql = postgres(url, { prepare: false, max: 5, onnotice: () => {} });
   return { sql, db: drizzle(sql, { schema }) };
 }
 

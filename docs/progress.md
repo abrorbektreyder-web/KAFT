@@ -4,7 +4,7 @@ Manba: `docs/prd-tz-v1.0.pdf`. Talab ID'lari PRD bilan bir xil.
 
 Belgilar: `[x]` bajarildi · `[~]` jarayonda · `[ ]` boshlanmagan
 
-**Hozir:** R0 · 1-hafta asosan tugadi (branch `r0/hafta-1-poydevor`). Keyingisi — 2-hafta: kirish va ruxsatlar.
+**Hozir:** R0 · 2-hafta (branch `r0/hafta-2-kirish`). Audit jurnali va ruxsatlar tayyor; kirish (login) — navbatda.
 
 ---
 
@@ -18,7 +18,7 @@ Belgilar: `[x]` bajarildi · `[~]` jarayonda · `[ ]` boshlanmagan
 - [x] Tenant izolyatsiyasi testlari (AC-7) — 10/10 o'tdi
 - [x] Modul kalitlari testlari — 5/5 o'tdi
 - [x] Migratsiyalar (`0000_core`, `0001_rls`) — dev bazaga qo'llandi
-- [~] CI (GitHub Actions) — yozildi, GitHub'ga push qilinmagani uchun hali ishga tushmagan
+- [x] CI (GitHub Actions) — GitHub'da o'tdi: migratsiya, typecheck, testlar (toza Postgres 17 da)
 - [~] Dockerfile + docker-compose — yozildi, Docker yo'qligi uchun tekshirilmagan (standalone build tekshirildi)
 - [ ] Staging server — provayder tanlanmagan (PRD ochiq savol #1)
 - [ ] shadcn/ui — UI ishi boshlanganda (6-hafta) o'rnatiladi
@@ -26,8 +26,9 @@ Belgilar: `[x]` bajarildi · `[~]` jarayonda · `[ ]` boshlanmagan
 ### 2-hafta: kirish va ruxsatlar
 - [ ] Kirish (telefon — Telegram Gateway / email), taklif qilish
 - [ ] Egaga 2FA
-- [ ] Ruxsatlarni tekshiruvchi qatlam
-- [ ] Audit jurnali (AC-7 ning «urinish jurnalga yoziladi» qismi shu yerda)
+- [x] Ruxsatlarni tekshiruvchi qatlam — `authorize()`, PRD 8 matritsasi 9 ta tizim roli bilan; 10/10 test
+- [x] Ruxsatsiz amal bloklanadi va audit jurnaliga yoziladi (AC-4)
+- [x] Audit jurnali — o'chirilmas (ilova ham, admin ham o'zgartira/o'chira olmaydi); 6/6 test
 
 ### 3–6-hafta
 - [ ] 3: Xodim kartasi, lavozim, bo'lim, maxfiy maydonlar, Excel import
@@ -39,9 +40,9 @@ Belgilar: `[x]` bajarildi · `[~]` jarayonda · `[ ]` boshlanmagan
 - [ ] CORE-01 Tenant ro'yxatdan o'tishi va sozlash ustasi
 - [ ] CORE-02 Holding tuzilmasi: kompaniyalar, ierarxik bo'limlar
 - [ ] CORE-03 Foydalanuvchini taklif qilish, rol berish, bloklash
-- [ ] CORE-04 Rollar va ruxsatlar (modul, amal, maxfiy maydon)
+- [~] CORE-04 Rollar va ruxsatlar — modul/amal/qamrov tayyor; ega o'z rolini yaratish UI'si va maxfiy maydon darajasi keyin
 - [ ] CORE-05 Ega va moliya rollariga 2FA
-- [ ] CORE-06 Audit jurnali
+- [~] CORE-06 Audit jurnali — jadval va himoya tayyor; maxfiy maydonni o'qishni yozish HR moduli bilan (3-hafta)
 - [ ] CORE-07 O'chirilmas tarix
 - [ ] CORE-08 O'zbek va rus interfeysi
 - [ ] CORE-09 Global qidiruv

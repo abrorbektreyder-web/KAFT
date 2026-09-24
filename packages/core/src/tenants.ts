@@ -1,5 +1,6 @@
 import { and, eq, sql } from 'drizzle-orm';
 import { schema, type Db, type Tx } from '@kaft/db';
+import { permissionsFor, SYSTEM_ROLES } from './roles.ts';
 
 // PRD 5-bo'lim modullari. `core` — yadro, doim yoqiq.
 export const MODULES = ['core', 'hr', 'att', 'pay', 'fin', 'cp', 'sal', 'pur', 'inv', 'doc', 'tsk', 'apr', 'ctl', 'mgt', 'tg', 'int'] as const;
@@ -22,6 +23,11 @@ export async function createTenant(db: Db, input: NewTenant) {
   return db.transaction(async (tx) => {
     const [tenant] = await tx.insert(schema.tenants).values(fields).returning();
     await tx.insert(schema.tenantModules).values(MODULES.map((module) => ({ tenantId: tenant!.id, module, enabled: enabled.has(module) })));
+    // PRD 8 standart rollari
+    const roles = await tx.insert(schema.roles).values(SYSTEM_ROLES.map((name) => ({ tenantId: tenant!.id, name, isSystem: true }))).returning();
+    await tx.insert(schema.rolePermissions).values(
+      roles.flatMap((r) => permissionsFor(r.name as (typeof SYSTEM_ROLES)[number]).map((p) => ({ ...p, tenantId: tenant!.id, roleId: r.id }))),
+    );
     return tenant!;
   });
 }
