@@ -23,6 +23,10 @@ export interface EmployeeInput {
   workSchedule?: string;
   contractType?: string;
   hiredAt?: string;
+  /** HR-07 eslatmalari uchun (YYYY-MM-DD) */
+  probationEndsOn?: string;
+  contractEndsOn?: string;
+  passportExpiresOn?: string;
   secrets?: Secrets;
 }
 

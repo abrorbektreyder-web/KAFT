@@ -4,7 +4,7 @@ Manba: `docs/prd-tz-v1.0.pdf`. Talab ID'lari PRD bilan bir xil.
 
 Belgilar: `[x]` bajarildi · `[~]` jarayonda · `[ ]` boshlanmagan
 
-**Hozir:** R0 · 4-hafta (branch `r0/hafta-4-kadr-hodisalari`). Kadr hodisalari, holat, kalendar, ta'til qoldig'i tayyor. Keyingisi — 5-hafta (hujjatlar, eslatmalar, Telegram bot). Telefon orqali kirish Telegram Gateway tokenini kutyapti.
+**Hozir:** R0 · 5-hafta (branch `r0/hafta-5-hujjat-telegram`). Hujjatlar, eslatmalar, bildirishnomalar, Telegram bog'lash va worker tayyor. Keyingisi — 6-hafta (UI: bosh sahifa v1, uz/ru, e2e). Kutilmoqda: Telegram bot tokeni, Telegram Gateway tokeni.
 
 ---
 
@@ -44,8 +44,15 @@ Belgilar: `[x]` bajarildi · `[~]` jarayonda · `[ ]` boshlanmagan
 - [x] 4: Kadr kalendari + bo'limda ko'p odam yo'qligi ogohlantirishi (standart: 30% va ≥2 kishi — PRD'da chegara yo'q)
 - [x] 4: Ta'til qoldig'i — ish yili bo'yicha, standart 21 kalendar kun
 - [x] 4: Hodisalar o'chirilmaydi, faqat sababi bilan bekor qilinadi (trigger bilan himoyalangan)
-- [ ] 4: Kelajak sanali o'tkazishni kuni kelganda kartaga qo'llash — worker bilan (5-hafta)
-- [ ] 5: Hujjatlar va maxfiylik, muddat eslatmalari, Telegram bot, bildirishnomalar
+- [x] 4: Kelajak sanali o'tkazishni kuni kelganda kartaga qo'llash — worker (5-hafta)
+- [x] 5: Hujjatlar va maxfiylik darajasi (ochiq/bo'lim/maxfiy) — 8/8 test; fayllar hozircha lokal papkada (`LocalDiskStorage`), S3 versiyasi server tanlanganda
+- [x] 5: Muddat eslatmalari — tug'ilgan kun, sinov (7 kun oldin), shartnoma va pasport (30 kun oldin); matnda maxfiy ma'lumot yo'q
+- [x] 5: Bildirishnomalar markazi — platformada + Telegram, turlari bo'yicha sozlanadi; takror yuborilmaydi
+- [x] 5: Telegram bog'lash — 6 xonali bir martalik kod (10 daqiqa) — 5/5 test
+- [x] 5: Worker — pg-boss har kuni 08:00 (Toshkent), grammY bot; kelajak sanali o'tkazish kuni kelganda qo'llanadi
+- [x] 5: Mezon «eslatma Telegram'ga belgilangan kunda keladi» — test bilan tasdiqlangan (soxta Telegram)
+- [ ] 5: Haqiqiy Telegram bot bilan tekshirish — bot tokeni kutilmoqda
+- [ ] 5: Ta'til qoldig'i eslatmasi (HR-07 ning bir qismi) — keyin
 - [ ] 6: Bosh sahifa v1, uz/ru, e2e testlar, asoschi mijozga ishga tushirish
 
 ### R0 talablari
@@ -58,19 +65,19 @@ Belgilar: `[x]` bajarildi · `[~]` jarayonda · `[ ]` boshlanmagan
 - [~] CORE-07 O'chirilmas tarix — audit jurnali va kadr hodisalari himoyalangan; moliya/ombor hujjatlari R1–R2 da
 - [ ] CORE-08 O'zbek va rus interfeysi
 - [ ] CORE-09 Global qidiruv
-- [ ] CORE-10 Bildirishnomalar markazi
+- [x] CORE-10 Bildirishnomalar markazi (UI — 6-hafta)
 - [x] HR-01 Xodim kartasi (maxfiy maydonlar bilan)
 - [x] HR-02 Lavozim, bo'lim, rahbar, ish jadvali, shartnoma turi
 - [x] HR-03 Kadr hodisalari
 - [x] HR-04 Xodim holati avtomatik
 - [x] HR-05 Kadr kalendari va ogohlantirish
 - [x] HR-06 Ta'til qoldig'i
-- [ ] HR-07 Muddat eslatmalari (5-hafta)
-- [ ] HR-08 Xodim hujjatlari (5-hafta)
+- [~] HR-07 Muddat eslatmalari — tug'ilgan kun, sinov, shartnoma, pasport tayyor; ta'til qoldig'i eslatmasi qolgan
+- [x] HR-08 Xodim hujjatlari
 - [x] HR-11 Xodimlarni Excel'dan import (xatolarni ko'rsatish bilan)
-- [ ] DOC-01/02 Fayllar va maxfiylik darajasi
-- [ ] TG-01 Telegram bot: bildirishnomalar
-- [ ] TG-04 Telegram akkauntni bog'lash
+- [x] DOC-01/02 Fayllar va maxfiylik darajasi
+- [~] TG-01 Telegram bot: bildirishnomalar — kod tayyor, haqiqiy token bilan tekshirilmagan
+- [x] TG-04 Telegram akkauntni bog'lash
 - [x] INT-01 Excel shablon (xodimlar)
 - [ ] Bosh sahifa v1
 

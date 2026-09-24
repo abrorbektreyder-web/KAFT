@@ -78,6 +78,48 @@
       "when": 1790271621144,
       "tag": "0010_hr_events_guard",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1790273576125,
+      "tag": "0011_documents",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1790273579030,
+      "tag": "0012_documents_rls",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1790274110265,
+      "tag": "0013_notifications",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1790274112218,
+      "tag": "0014_notifications_rls",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1790274257873,
+      "tag": "0015_telegram_link",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1790274259871,
+      "tag": "0016_telegram_link_rls",
+      "breakpoints": true
     }
   ]
 }

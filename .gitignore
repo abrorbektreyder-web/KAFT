@@ -12,3 +12,6 @@ coverage/
 
 # Claude lokal sozlamalari
 .claude/
+
+# Lokal fayl ombori (dev)
+.storage/

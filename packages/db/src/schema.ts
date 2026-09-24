@@ -172,6 +172,10 @@ export const employees = pgTable('employees', {
   hiredAt: date('hired_at'),
   // HR-06: yillik ta'til (kalendar kun). Mehnat kodeksi bo'yicha minimum 21
   annualLeaveDays: integer('annual_leave_days').notNull().default(21),
+  // HR-07: muddat eslatmalari uchun
+  probationEndsOn: date('probation_ends_on'),
+  contractEndsOn: date('contract_ends_on'),
+  passportExpiresOn: date('passport_expires_on'),
   createdAt: createdAt(),
 }, (t) => [
   unique('employees_tenant_id_id_key').on(t.tenantId, t.id),
@@ -216,4 +220,74 @@ export const employmentEvents = pgTable('employment_events', {
   foreignKey({ columns: [t.tenantId, t.employeeId], foreignColumns: [employees.tenantId, employees.id] }).onDelete('cascade'),
   index('employment_events_employee_idx').on(t.tenantId, t.employeeId),
   index('employment_events_period_idx').on(t.tenantId, t.startsOn),
+]);
+
+// DOC-01/02: hujjatlar. Fayl omborida `{tenant_id}/{id}` kaliti bilan saqlanadi.
+export const documents = pgTable('documents', {
+  id: id(),
+  tenantId: tenantId(),
+  // employee | counterparty | company
+  ownerType: text('owner_type').notNull(),
+  ownerId: uuid('owner_id').notNull(),
+  /** Bo'lim darajasidagi hujjat uchun (xodim hujjatida — xodimning bo'limi) */
+  departmentId: uuid('department_id'),
+  title: text('title').notNull(),
+  // contract | order | copy | regulation | other
+  kind: text('kind').notNull(),
+  // open | department | secret
+  confidentiality: text('confidentiality').notNull(),
+  storageKey: text('storage_key').notNull(),
+  fileName: text('file_name').notNull(),
+  contentType: text('content_type').notNull(),
+  size: integer('size').notNull(),
+  expiresOn: date('expires_on'),
+  uploadedBy: uuid('uploaded_by'),
+  createdAt: createdAt(),
+}, (t) => [index('documents_owner_idx').on(t.tenantId, t.ownerType, t.ownerId)]);
+
+// CORE-10: bildirishnomalar markazi. dedupe_key — bir eslatma bir marta (kunlik ish qayta ishlasa ham).
+export const notifications = pgTable('notifications', {
+  id: id(),
+  tenantId: tenantId(),
+  userId: uuid('user_id').notNull(),
+  kind: text('kind').notNull(),
+  title: text('title').notNull(),
+  body: text('body').notNull(),
+  link: text('link'),
+  dedupeKey: text('dedupe_key').notNull(),
+  createdAt: createdAt(),
+  readAt: timestamp('read_at', { withTimezone: true }),
+  /** Telegram'ga yuborilishi kerakmi (foydalanuvchi sozlamasi bo'yicha) va qachon yuborildi */
+  viaTelegram: boolean('via_telegram').notNull().default(true),
+  telegramSentAt: timestamp('telegram_sent_at', { withTimezone: true }),
+}, (t) => [
+  unique('notifications_dedupe_key').on(t.tenantId, t.userId, t.dedupeKey),
+  foreignKey({ columns: [t.tenantId, t.userId], foreignColumns: [users.tenantId, users.id] }).onDelete('cascade'),
+  index('notifications_pending_tg_idx').on(t.telegramSentAt),
+]);
+
+// CORE-10: turlari bo'yicha sozlash (yozuv yo'q — hammasi yoqiq)
+export const notificationPrefs = pgTable('notification_prefs', {
+  tenantId: tenantId(),
+  userId: uuid('user_id').notNull(),
+  kind: text('kind').notNull(),
+  inApp: boolean('in_app').notNull().default(true),
+  telegram: boolean('telegram').notNull().default(true),
+}, (t) => [
+  primaryKey({ columns: [t.userId, t.kind] }),
+  foreignKey({ columns: [t.tenantId, t.userId], foreignColumns: [users.tenantId, users.id] }).onDelete('cascade'),
+]);
+
+// TG-04: Telegram bog'lash kodi. Kod faqat xesh holida; 10 daqiqa, bir marta.
+export const telegramLinkCodes = pgTable('telegram_link_codes', {
+  id: id(),
+  tenantId: tenantId(),
+  userId: uuid('user_id').notNull(),
+  codeHash: text('code_hash').notNull(),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  usedAt: timestamp('used_at', { withTimezone: true }),
+  createdAt: createdAt(),
+}, (t) => [
+  foreignKey({ columns: [t.tenantId, t.userId], foreignColumns: [users.tenantId, users.id] }).onDelete('cascade'),
+  index('telegram_link_codes_hash_idx').on(t.codeHash),
 ]);
