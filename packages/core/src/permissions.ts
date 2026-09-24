@@ -43,8 +43,13 @@ export async function can(tx: Tx, userId: string, module: PermModule, action: Ac
 export async function authorize(db: Db, ctx: Ctx, module: PermModule, action: Action): Promise<Scope> {
   const scope = await withTenant(db, ctx.tenantId, (tx) => can(tx, ctx.userId, module, action));
   if (scope) return scope;
+  return deny(db, ctx, module, action);
+}
+
+/** Rad etishni audit jurnaliga yozib ForbiddenError tashlaydi (qamrov tekshiruvlari uchun ham). */
+export async function deny(db: Db, ctx: Ctx, module: PermModule, action: Action, entityId?: string): Promise<never> {
   await withTenant(db, ctx.tenantId, (tx) =>
-    tx.insert(schema.auditLog).values({ tenantId: ctx.tenantId, actorUserId: ctx.userId, action: 'denied', entity: module, meta: { action } }),
+    tx.insert(schema.auditLog).values({ tenantId: ctx.tenantId, actorUserId: ctx.userId, action: 'denied', entity: module, entityId, meta: { action } }),
   );
   throw new ForbiddenError(module, action);
 }

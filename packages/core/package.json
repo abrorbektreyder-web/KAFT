@@ -11,7 +11,8 @@
   },
   "dependencies": {
     "@kaft/db": "workspace:*",
-    "drizzle-orm": "^0.45.3"
+    "drizzle-orm": "^0.45.3",
+    "exceljs": "^4.4.0"
   },
   "devDependencies": {
     "@types/node": "^26.6.2",

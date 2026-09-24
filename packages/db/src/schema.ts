@@ -1,7 +1,7 @@
 // Yadro sxemasi (PRD 9.1–9.2). Har jadvalda tenant_id; ajratish RLS bilan (migrations/*_rls.sql).
 import { sql } from 'drizzle-orm';
 import {
-  bigint, boolean, char, foreignKey, index, jsonb, pgTable, primaryKey, text, timestamp, unique, uuid,
+  bigint, boolean, char, date, foreignKey, index, jsonb, pgTable, primaryKey, text, timestamp, unique, uuid,
 } from 'drizzle-orm/pg-core';
 import { authUser } from './auth-schema.ts';
 
@@ -135,4 +135,60 @@ export const invitations = pgTable('invitations', {
   createdAt: createdAt(),
 }, (t) => [
   foreignKey({ columns: [t.tenantId, t.userId], foreignColumns: [users.tenantId, users.id] }).onDelete('cascade'),
+]);
+
+// HR-02: lavozimlar (kompaniya bo'yicha)
+export const positions = pgTable('positions', {
+  id: id(),
+  tenantId: tenantId(),
+  companyId: uuid('company_id').notNull(),
+  name: text('name').notNull(),
+  createdAt: createdAt(),
+}, (t) => [
+  unique('positions_tenant_id_id_key').on(t.tenantId, t.id),
+  unique('positions_company_name_key').on(t.companyId, t.name),
+  foreignKey({ columns: [t.tenantId, t.companyId], foreignColumns: [companies.tenantId, companies.id] }).onDelete('cascade'),
+]);
+
+// HR-01/02: xodim kartasi. Maxfiy maydonlar alohida jadvalda (employee_secrets).
+export const employees = pgTable('employees', {
+  id: id(),
+  tenantId: tenantId(),
+  companyId: uuid('company_id').notNull(),
+  departmentId: uuid('department_id'),
+  positionId: uuid('position_id'),
+  managerId: uuid('manager_id'),
+  userId: uuid('user_id'),
+  lastName: text('last_name').notNull(),
+  firstName: text('first_name').notNull(),
+  middleName: text('middle_name'),
+  birthDate: date('birth_date'),
+  phone: text('phone'),
+  address: text('address'),
+  photoUrl: text('photo_url'),
+  education: text('education'),
+  workSchedule: text('work_schedule'),
+  contractType: text('contract_type'),
+  hiredAt: date('hired_at'),
+  createdAt: createdAt(),
+}, (t) => [
+  unique('employees_tenant_id_id_key').on(t.tenantId, t.id),
+  foreignKey({ columns: [t.tenantId, t.companyId], foreignColumns: [companies.tenantId, companies.id] }).onDelete('cascade'),
+  foreignKey({ columns: [t.tenantId, t.departmentId], foreignColumns: [departments.tenantId, departments.id] }),
+  foreignKey({ columns: [t.tenantId, t.positionId], foreignColumns: [positions.tenantId, positions.id] }),
+  foreignKey({ columns: [t.tenantId, t.managerId], foreignColumns: [t.tenantId, t.id] }),
+  foreignKey({ columns: [t.tenantId, t.userId], foreignColumns: [users.tenantId, users.id] }),
+  index('employees_tenant_company_idx').on(t.tenantId, t.companyId),
+]);
+
+export const employeeSecrets = pgTable('employee_secrets', {
+  tenantId: tenantId(),
+  employeeId: uuid('employee_id').notNull(),
+  passport: text('passport'),
+  jshshir: text('jshshir'),
+  bankCard: text('bank_card'),
+}, (t) => [
+  primaryKey({ columns: [t.tenantId, t.employeeId] }),
+  unique('employee_secrets_tenant_jshshir_key').on(t.tenantId, t.jshshir),
+  foreignKey({ columns: [t.tenantId, t.employeeId], foreignColumns: [employees.tenantId, employees.id] }).onDelete('cascade'),
 ]);

@@ -50,6 +50,20 @@
       "when": 1790267075757,
       "tag": "0006_auth_id_default",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1790268776861,
+      "tag": "0007_hr",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790268780669,
+      "tag": "0008_hr_rls",
+      "breakpoints": true
     }
   ]
 }

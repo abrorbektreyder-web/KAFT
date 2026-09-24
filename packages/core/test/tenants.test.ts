@@ -17,7 +17,9 @@ describe('createTenant', () => {
     created.push(t.id);
 
     expect(t.brandName).toBe('Baraka ERP');
-    for (const m of MODULES) expect(await withTenant(db, t.id, (tx) => isModuleEnabled(tx, m))).toBe(true);
+    // Bitta tranzaksiyada — masofaviy bazada 16 ta alohida so'rov sekin
+    const all = await withTenant(db, t.id, async (tx) => { const r = []; for (const m of MODULES) r.push(await isModuleEnabled(tx, m)); return r; });
+    expect(all.every(Boolean)).toBe(true);
   });
 
   it('faqat tanlangan modullarni yoqadi — qolganlari o‘chiq', async () => {

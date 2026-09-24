@@ -4,7 +4,7 @@ Manba: `docs/prd-tz-v1.0.pdf`. Talab ID'lari PRD bilan bir xil.
 
 Belgilar: `[x]` bajarildi · `[~]` jarayonda · `[ ]` boshlanmagan
 
-**Hozir:** R0 · 2-hafta (branch `r0/hafta-2-login`). Email bilan kirish, taklif, 2FA tayyor; telefon orqali kirish Telegram Gateway tokenini kutyapti. Keyingisi — 3-hafta.
+**Hozir:** R0 · 3-hafta (branch `r0/hafta-3-kadrlar`). Xodim kartasi, maxfiy maydonlar va Excel import tayyor. Keyingisi — 4-hafta (kadr hodisalari). Telefon orqali kirish Telegram Gateway tokenini kutyapti.
 
 ---
 
@@ -36,7 +36,9 @@ Belgilar: `[x]` bajarildi · `[~]` jarayonda · `[ ]` boshlanmagan
 - [x] Audit jurnali — o'chirilmas (ilova ham, admin ham o'zgartira/o'chira olmaydi); 6/6 test
 
 ### 3–6-hafta
-- [ ] 3: Xodim kartasi, lavozim, bo'lim, maxfiy maydonlar, Excel import
+- [x] 3: Xodim kartasi, lavozim, bo'lim — 7/7 test
+- [x] 3: Maxfiy maydonlar (pasport, JShShIR, karta) — faqat ruxsatli rolga; har o'qish jurnalga, o'zgarish niqoblangan holda
+- [x] 3: Excel import — 100 xodim 11,4 soniyada (mezon 60 s); xato bo'lsa qator/ustun, hech narsa yozilmaydi — 6/6 test
 - [ ] 4: Kadr hodisalari, holatni avtomatik hisoblash, kadr kalendari, ta'til qoldig'i
 - [ ] 5: Hujjatlar va maxfiylik, muddat eslatmalari, Telegram bot, bildirishnomalar
 - [ ] 6: Bosh sahifa v1, uz/ru, e2e testlar, asoschi mijozga ishga tushirish
@@ -52,12 +54,14 @@ Belgilar: `[x]` bajarildi · `[~]` jarayonda · `[ ]` boshlanmagan
 - [ ] CORE-08 O'zbek va rus interfeysi
 - [ ] CORE-09 Global qidiruv
 - [ ] CORE-10 Bildirishnomalar markazi
-- [ ] HR-01 … HR-08 Xodim kartasi, kadr hodisalari, holat, kalendar, eslatmalar, hujjatlar
-- [ ] HR-11 Xodimlarni Excel'dan import
+- [x] HR-01 Xodim kartasi (maxfiy maydonlar bilan)
+- [x] HR-02 Lavozim, bo'lim, rahbar, ish jadvali, shartnoma turi
+- [ ] HR-03 … HR-08 Kadr hodisalari, holat, kalendar, eslatmalar, hujjatlar
+- [x] HR-11 Xodimlarni Excel'dan import (xatolarni ko'rsatish bilan)
 - [ ] DOC-01/02 Fayllar va maxfiylik darajasi
 - [ ] TG-01 Telegram bot: bildirishnomalar
 - [ ] TG-04 Telegram akkauntni bog'lash
-- [ ] INT-01 Excel shablon (xodimlar)
+- [x] INT-01 Excel shablon (xodimlar)
 - [ ] Bosh sahifa v1
 
 ## R1 — Pul va kontragentlar (7–12 hafta)
