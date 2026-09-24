@@ -1,0 +1,23 @@
+{
+  "name": "@kaft/auth",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@kaft/core": "workspace:*",
+    "@kaft/db": "workspace:*",
+    "better-auth": "^1.7.5"
+  },
+  "devDependencies": {
+    "@better-auth/utils": "^0.5.0",
+    "@types/node": "^26.6.2",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.1"
+  }
+}

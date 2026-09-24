@@ -4,7 +4,7 @@ Manba: `docs/prd-tz-v1.0.pdf`. Talab ID'lari PRD bilan bir xil.
 
 Belgilar: `[x]` bajarildi · `[~]` jarayonda · `[ ]` boshlanmagan
 
-**Hozir:** R0 · 2-hafta (branch `r0/hafta-2-kirish`). Audit jurnali va ruxsatlar tayyor; kirish (login) — navbatda.
+**Hozir:** R0 · 2-hafta (branch `r0/hafta-2-login`). Email bilan kirish, taklif, 2FA tayyor; telefon orqali kirish Telegram Gateway tokenini kutyapti. Keyingisi — 3-hafta.
 
 ---
 
@@ -24,8 +24,13 @@ Belgilar: `[x]` bajarildi · `[~]` jarayonda · `[ ]` boshlanmagan
 - [ ] shadcn/ui — UI ishi boshlanganda (6-hafta) o'rnatiladi
 
 ### 2-hafta: kirish va ruxsatlar
-- [ ] Kirish (telefon — Telegram Gateway / email), taklif qilish
-- [ ] Egaga 2FA
+- [x] Email + parol bilan kirish (Better Auth 1.7.5), sessiya 12 soat — faol bo'lmasa tugaydi
+- [x] Taklif qilish: xat + 7 kunlik bir martalik havola (token faqat xesh holida saqlanadi); audit jurnaliga yoziladi
+- [x] Ega va Buxgalterga 2FA (TOTP) majburiy — yoqilmaguncha platforma ochilmaydi
+- [x] Bloklangan foydalanuvchi sessiyasi ishlamaydi
+- [x] Email: konsolga chiqadi + `report()` hisoboti (haqiqiy provayder keyin)
+- [ ] Telefon orqali kirish — Telegram Gateway tokeni kutilmoqda
+- [ ] Kirish sahifalari (UI) — 6-haftada bosh sahifa bilan
 - [x] Ruxsatlarni tekshiruvchi qatlam — `authorize()`, PRD 8 matritsasi 9 ta tizim roli bilan; 10/10 test
 - [x] Ruxsatsiz amal bloklanadi va audit jurnaliga yoziladi (AC-4)
 - [x] Audit jurnali — o'chirilmas (ilova ham, admin ham o'zgartira/o'chira olmaydi); 6/6 test
@@ -39,9 +44,9 @@ Belgilar: `[x]` bajarildi · `[~]` jarayonda · `[ ]` boshlanmagan
 ### R0 talablari
 - [ ] CORE-01 Tenant ro'yxatdan o'tishi va sozlash ustasi
 - [ ] CORE-02 Holding tuzilmasi: kompaniyalar, ierarxik bo'limlar
-- [ ] CORE-03 Foydalanuvchini taklif qilish, rol berish, bloklash
+- [~] CORE-03 Taklif qilish (email), rol berish, bloklash — tayyor; telefon orqali taklif — Telegram Gateway bilan
 - [~] CORE-04 Rollar va ruxsatlar — modul/amal/qamrov tayyor; ega o'z rolini yaratish UI'si va maxfiy maydon darajasi keyin
-- [ ] CORE-05 Ega va moliya rollariga 2FA
+- [x] CORE-05 Ega va moliya rollariga 2FA — majburiy, testlangan
 - [~] CORE-06 Audit jurnali — jadval va himoya tayyor; maxfiy maydonni o'qishni yozish HR moduli bilan (3-hafta)
 - [ ] CORE-07 O'chirilmas tarix
 - [ ] CORE-08 O'zbek va rus interfeysi
@@ -74,3 +79,5 @@ Belgilar: `[x]` bajarildi · `[~]` jarayonda · `[ ]` boshlanmagan
 - 2026-09-24: Telefon OTP — Telegram Gateway.
 - 2026-09-24: Bitta kod bazasi, ko'p mijoz; moslashtirish tenant sozlamalari va modul kalitlari orqali.
 - 2026-09-24: Dev baza — Supabase bulutida (faqat soxta ma'lumot), lokal Docker yo'q.
+- 2026-09-24: Web kirish — email + parol + TOTP 2FA; telefon (Telegram Gateway) xodimlar uchun keyin.
+- 2026-09-24: Email — hozircha konsol + hisobot; provayder tanlanmagan.

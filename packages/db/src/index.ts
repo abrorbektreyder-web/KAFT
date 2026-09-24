@@ -4,6 +4,9 @@ import { drizzle, type PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import * as schema from './schema.ts';
 
 export * as schema from './schema.ts';
+export { authSchema } from './auth-schema.ts';
+// Operatorlar shu yerdan — boshqa paketlarda drizzle-orm'ning ikkinchi nusxasi paydo bo'lmasin
+export { and, eq, gt, inArray, isNull, sql } from 'drizzle-orm';
 
 export type Db = PostgresJsDatabase<typeof schema>;
 export type Tx = Parameters<Parameters<Db['transaction']>[0]>[0];

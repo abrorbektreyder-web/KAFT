@@ -29,6 +29,27 @@
       "when": 1790265511237,
       "tag": "0003_audit_guard",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790266861932,
+      "tag": "0004_auth",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790266866673,
+      "tag": "0005_auth_grants",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790267075757,
+      "tag": "0006_auth_id_default",
+      "breakpoints": true
     }
   ]
 }

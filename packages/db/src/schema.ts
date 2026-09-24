@@ -3,6 +3,9 @@ import { sql } from 'drizzle-orm';
 import {
   bigint, boolean, char, foreignKey, index, jsonb, pgTable, primaryKey, text, timestamp, unique, uuid,
 } from 'drizzle-orm/pg-core';
+import { authUser } from './auth-schema.ts';
+
+export * from './auth-schema.ts';
 
 const id = () => uuid('id').primaryKey().default(sql`gen_random_uuid()`);
 const createdAt = () => timestamp('created_at', { withTimezone: true }).notNull().defaultNow();
@@ -61,6 +64,8 @@ export const users = pgTable('users', {
   phone: text('phone'),
   locale: text('locale').notNull().default('uz'),
   telegramId: bigint('telegram_id', { mode: 'bigint' }),
+  // Login (Better Auth) bilan bog'lanish; taklif qabul qilinguncha bo'sh
+  authUserId: uuid('auth_user_id').references(() => authUser.id, { onDelete: 'set null' }),
   isBlocked: boolean('is_blocked').notNull().default(false),
   createdAt: createdAt(),
 }, (t) => [
@@ -118,3 +123,16 @@ export const auditLog = pgTable('audit_log', {
   ip: text('ip'),
   meta: jsonb('meta'),
 }, (t) => [index('audit_log_tenant_at_idx').on(t.tenantId, t.at)]);
+
+// CORE-03: taklifnoma. Token faqat xesh ko'rinishida saqlanadi.
+export const invitations = pgTable('invitations', {
+  id: id(),
+  tenantId: tenantId(),
+  userId: uuid('user_id').notNull(),
+  tokenHash: text('token_hash').notNull().unique(),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  acceptedAt: timestamp('accepted_at', { withTimezone: true }),
+  createdAt: createdAt(),
+}, (t) => [
+  foreignKey({ columns: [t.tenantId, t.userId], foreignColumns: [users.tenantId, users.id] }).onDelete('cascade'),
+]);
