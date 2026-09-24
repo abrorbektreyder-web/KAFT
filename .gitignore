@@ -1,0 +1,11 @@
+node_modules/
+.next/
+dist/
+coverage/
+.turbo/
+*.log
+
+# Sirlar
+.env
+.env.*
+!.env.example
