@@ -4,7 +4,7 @@ Manba: `docs/prd-tz-v1.0.pdf`. Talab ID'lari PRD bilan bir xil.
 
 Belgilar: `[x]` bajarildi · `[~]` jarayonda · `[ ]` boshlanmagan
 
-**Hozir:** R0 · 5-hafta (branch `r0/hafta-5-hujjat-telegram`). Hujjatlar, eslatmalar, bildirishnomalar, Telegram bog'lash va worker tayyor. Keyingisi — 6-hafta (UI: bosh sahifa v1, uz/ru, e2e). Kutilmoqda: Telegram bot tokeni, Telegram Gateway tokeni.
+**Hozir:** R0 · 6-hafta (branch `r0/hafta-6-ui`). UI birinchi qismi tayyor: kirish, 2FA, bosh sahifa v1, qidiruv, demo ma'lumot. Qolgani: uz/ru tillari, e2e testlar. Kutilmoqda: Telegram bot tokeni, Telegram Gateway tokeni.
 
 ---
 
@@ -53,7 +53,15 @@ Belgilar: `[x]` bajarildi · `[~]` jarayonda · `[ ]` boshlanmagan
 - [x] 5: Mezon «eslatma Telegram'ga belgilangan kunda keladi» — test bilan tasdiqlangan (soxta Telegram)
 - [ ] 5: Haqiqiy Telegram bot bilan tekshirish — bot tokeni kutilmoqda
 - [ ] 5: Ta'til qoldig'i eslatmasi (HR-07 ning bir qismi) — keyin
-- [ ] 6: Bosh sahifa v1, uz/ru, e2e testlar, asoschi mijozga ishga tushirish
+- [x] 6: shadcn/ui (Radix, lucide) + Kaft palitrasi (dizayn: `docs/design/`)
+- [x] 6: Kirish sahifalari — login, 2FA kodi, 2FA sozlash (zaxira kodlar bilan), taklifni qabul qilish
+- [x] 6: Ilova qobig'i — yon panel (modullar reliz belgisi bilan), kompaniya almashtirgich, qidiruv, bildirishnomalar, chiqish
+- [x] 6: Bosh sahifa v1 — haqiqiy: «Kim qayerda», bugun yo'qlar, kadr ogohlantirishlari, eslatmalar; qolgan bloklar R1/R2 belgisi bilan (soxta raqamsiz)
+- [x] 6: Global qidiruv (CORE-09) — xodim va hujjatlar
+- [x] 6: Demo ma'lumot — `pnpm seed:demo` (2 kompaniya, 40 xodim, hodisalar, ega va HR loginlari)
+- [ ] 6: O'zbek va rus interfeysi (CORE-08) — next-intl
+- [ ] 6: e2e testlar (Playwright)
+- [ ] 6: Asoschi mijozga ishga tushirish — server kerak (PRD ochiq savol #1)
 
 ### R0 talablari
 - [ ] CORE-01 Tenant ro'yxatdan o'tishi va sozlash ustasi
@@ -61,10 +69,11 @@ Belgilar: `[x]` bajarildi · `[~]` jarayonda · `[ ]` boshlanmagan
 - [~] CORE-03 Taklif qilish (email), rol berish, bloklash — tayyor; telefon orqali taklif — Telegram Gateway bilan
 - [~] CORE-04 Rollar va ruxsatlar — modul/amal/qamrov tayyor; ega o'z rolini yaratish UI'si va maxfiy maydon darajasi keyin
 - [x] CORE-05 Ega va moliya rollariga 2FA — majburiy, testlangan
+  - ⚠ Dev'da vaqtincha o'chirilgan (`KAFT_REQUIRE_2FA=false`). **Prod'ga chiqishdan oldin olib tashlash shart** — standart holatda yoqiq
 - [~] CORE-06 Audit jurnali — jadval va himoya tayyor; maxfiy maydonni o'qishni yozish HR moduli bilan (3-hafta)
 - [~] CORE-07 O'chirilmas tarix — audit jurnali va kadr hodisalari himoyalangan; moliya/ombor hujjatlari R1–R2 da
 - [ ] CORE-08 O'zbek va rus interfeysi
-- [ ] CORE-09 Global qidiruv
+- [x] CORE-09 Global qidiruv (xodim, hujjat; kontragent/tovar — o'z modullari bilan)
 - [x] CORE-10 Bildirishnomalar markazi (UI — 6-hafta)
 - [x] HR-01 Xodim kartasi (maxfiy maydonlar bilan)
 - [x] HR-02 Lavozim, bo'lim, rahbar, ish jadvali, shartnoma turi
@@ -79,7 +88,7 @@ Belgilar: `[x]` bajarildi · `[~]` jarayonda · `[ ]` boshlanmagan
 - [~] TG-01 Telegram bot: bildirishnomalar — kod tayyor, haqiqiy token bilan tekshirilmagan
 - [x] TG-04 Telegram akkauntni bog'lash
 - [x] INT-01 Excel shablon (xodimlar)
-- [ ] Bosh sahifa v1
+- [x] Bosh sahifa v1 (UI)
 
 ## R1 — Pul va kontragentlar (7–12 hafta)
 - [ ] Ko'p valyutali qarz qoidasi (R1 dan oldin hal qilinadi)
@@ -102,3 +111,4 @@ Belgilar: `[x]` bajarildi · `[~]` jarayonda · `[ ]` boshlanmagan
 - 2026-09-24: Dev baza — Supabase bulutida (faqat soxta ma'lumot), lokal Docker yo'q.
 - 2026-09-24: Web kirish — email + parol + TOTP 2FA; telefon (Telegram Gateway) xodimlar uchun keyin.
 - 2026-09-24: Email — hozircha konsol + hisobot; provayder tanlanmagan.
+- 2026-09-25: Test davrida 2FA majburiyligi dev'da o'chirildi (`KAFT_REQUIRE_2FA=false`); prod'da yoqiq.

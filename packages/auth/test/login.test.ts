@@ -105,6 +105,12 @@ describe('sessiya', () => {
     expect(Math.abs(ttl - SESSION_TTL)).toBeLessThan(120);
   });
 
+  it('dev sozlamasi: 2FA majburiyligi o‘chirilsa ega 2FA’siz kiradi (standart — yoqiq)', async () => {
+    const { headers } = await signIn(egaEmail);
+    await expect(resolveSession(db, auth, headers)).rejects.toBeInstanceOf(TwoFactorRequiredError);
+    expect(await resolveSession(db, auth, headers, { requireTwoFactor: false })).toMatchObject({ tenantId, userId: egaId });
+  });
+
   it('sessiyasiz so‘rov rad etiladi', async () => {
     await expect(resolveSession(db, auth, new Headers())).rejects.toBeInstanceOf(UnauthorizedError);
   });

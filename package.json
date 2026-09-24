@@ -3,11 +3,14 @@
   "private": true,
   "type": "module",
   "packageManager": "pnpm@11.20.0",
-  "engines": { "node": ">=24" },
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
     "test": "pnpm -r --workspace-concurrency=1 test",
     "typecheck": "pnpm -r typecheck",
     "db:generate": "pnpm --filter @kaft/db generate",
-    "db:migrate": "pnpm --filter @kaft/db migrate"
+    "db:migrate": "pnpm --filter @kaft/db migrate",
+    "seed:demo": "pnpm --filter @kaft/auth seed:demo"
   }
 }

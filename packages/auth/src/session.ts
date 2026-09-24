@@ -13,7 +13,10 @@ export class TwoFactorRequiredError extends Error {
 }
 
 /** So'rovdagi sessiyadan tenant va foydalanuvchini aniqlaydi; har server amalida birinchi chaqiriladi. */
-export async function resolveSession(db: Db, auth: Auth, headers: Headers): Promise<Ctx & { authUserId: string }> {
+/**
+ * `requireTwoFactor: false` — faqat dev/test uchun (KAFT_REQUIRE_2FA=false). Standart — yoqiq (CORE-05).
+ */
+export async function resolveSession(db: Db, auth: Auth, headers: Headers, opts: { requireTwoFactor?: boolean } = {}): Promise<Ctx & { authUserId: string }> {
   const s = await auth.api.getSession({ headers });
   if (!s) throw new UnauthorizedError();
 
@@ -24,7 +27,7 @@ export async function resolveSession(db: Db, auth: Auth, headers: Headers): Prom
     .where(eq(schema.users.authUserId, s.user.id));
   if (!member || member.isBlocked) throw new UnauthorizedError();
 
-  if (!s.user.twoFactorEnabled) {
+  if (opts.requireTwoFactor !== false && !s.user.twoFactorEnabled) {
     const roles = await db
       .select({ name: schema.roles.name })
       .from(schema.userRoles)

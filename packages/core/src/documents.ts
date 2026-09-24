@@ -23,7 +23,7 @@ export interface NewDocument {
 
 type Doc = typeof schema.documents.$inferSelect;
 
-interface Viewer {
+export interface Viewer {
   docScope: Scope | null;
   /** Hujjatlarni boshqaruvchilar (T/Y): ega, direktor, buxgalter, HR */
   docManager: boolean;
@@ -31,7 +31,7 @@ interface Viewer {
   employee: { id: string; departmentId: string | null } | undefined;
 }
 
-async function viewer(tx: Tx, ctx: Ctx): Promise<Viewer> {
+export async function viewer(tx: Tx, ctx: Ctx): Promise<Viewer> {
   const [docScope, update, hrSecret] = await Promise.all([
     can(tx, ctx.userId, 'doc', 'view'), can(tx, ctx.userId, 'doc', 'update'), can(tx, ctx.userId, 'hr.secret', 'view'),
   ]);

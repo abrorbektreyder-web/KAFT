@@ -132,11 +132,11 @@ function withHire(emp: { hiredAt: string | null }, events: HrEvent[]): HrEvent[]
   return events.some((e) => e.type === 'hire') || !emp.hiredAt ? events : [...events, { type: 'hire', startsOn: emp.hiredAt, endsOn: null, cancelledAt: null }];
 }
 
-async function loadAll(tx: Tx) {
+async function loadAll(tx: Tx, companyId?: string) {
   const emps: EmpRow[] = await tx.select({
     id: schema.employees.id, userId: schema.employees.userId, hiredAt: schema.employees.hiredAt,
     departmentId: schema.employees.departmentId, lastName: schema.employees.lastName, firstName: schema.employees.firstName,
-  }).from(schema.employees);
+  }).from(schema.employees).where(companyId ? eq(schema.employees.companyId, companyId) : undefined);
   const evs = await tx.select({
     employeeId: schema.employmentEvents.employeeId, type: schema.employmentEvents.type, startsOn: schema.employmentEvents.startsOn,
     endsOn: schema.employmentEvents.endsOn, cancelledAt: schema.employmentEvents.cancelledAt,
@@ -164,10 +164,10 @@ export async function employeeStatus(db: Db, ctx: Ctx, employeeId: string, on = 
 }
 
 /** Bosh sahifadagi «Kim qayerda»: holatlar bo'yicha sonlar. */
-export async function headcount(db: Db, ctx: Ctx, opts: { on?: string } = {}): Promise<Record<Status, number>> {
+export async function headcount(db: Db, ctx: Ctx, opts: { on?: string; companyId?: string } = {}): Promise<Record<Status, number>> {
   if ((await authorize(db, ctx, 'hr', 'view')) !== 'all') await deny(db, ctx, 'hr', 'view');
   const on = opts.on ?? today();
-  const { emps, eventsOf } = await withTenant(db, ctx.tenantId, loadAll);
+  const { emps, eventsOf } = await withTenant(db, ctx.tenantId, (tx) => loadAll(tx, opts.companyId));
   const counts = Object.fromEntries(Object.keys(STATUS_LABEL).map((k) => [k, 0])) as Record<Status, number>;
   for (const emp of emps) counts[statusOn(eventsOf(emp), on)]++;
   return counts;
@@ -199,7 +199,7 @@ export const ABSENCE_ALERT = { ratio: 0.3, minAbsent: 2 };
 /** HR-05: kim qachon yo'q va bo'limlar bo'yicha ogohlantirishlar. */
 export async function absenceCalendar(db: Db, ctx: Ctx, range: { from: string; to: string }, rule = ABSENCE_ALERT) {
   if ((await authorize(db, ctx, 'hr', 'view')) !== 'all') await deny(db, ctx, 'hr', 'view');
-  const { emps, eventsOf } = await withTenant(db, ctx.tenantId, loadAll);
+  const { emps, eventsOf } = await withTenant(db, ctx.tenantId, (tx) => loadAll(tx));
 
   const absences = emps.flatMap((emp) => eventsOf(emp)
     .filter((e) => ABSENCE[e.type] && overlaps(e, { startsOn: range.from, endsOn: range.to }))
