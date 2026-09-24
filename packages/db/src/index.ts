@@ -33,8 +33,9 @@ export function withAppRole<T>(db: Db, fn: (tx: Tx) => Promise<T>): Promise<T> {
 /** Tenant kontekstidagi tranzaksiya: RLS faqat shu tenant qatorlarini ochadi. */
 export function withTenant<T>(db: Db, tenantId: string, fn: (tx: Tx) => Promise<T>): Promise<T> {
   if (!UUID.test(tenantId)) return Promise.reject(new Error(`Noto'g'ri tenant ID: ${tenantId}`));
-  return withAppRole(db, async (tx) => {
-    await tx.execute(dsql`select set_config('app.tenant_id', ${tenantId}, true)`);
+  return db.transaction(async (tx) => {
+    // Rol va tenant bitta so'rovda (SET LOCAL ROLE ekvivalenti) — har tranzaksiyada bir aylanish kam
+    await tx.execute(dsql`select set_config('role', 'kaft_app', true), set_config('app.tenant_id', ${tenantId}, true)`);
     return fn(tx);
   });
 }

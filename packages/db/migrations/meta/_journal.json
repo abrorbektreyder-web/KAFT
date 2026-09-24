@@ -64,6 +64,20 @@
       "when": 1790268780669,
       "tag": "0008_hr_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1790271618438,
+      "tag": "0009_hr_events",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1790271621144,
+      "tag": "0010_hr_events_guard",
+      "breakpoints": true
     }
   ]
 }

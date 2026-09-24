@@ -4,7 +4,7 @@ Manba: `docs/prd-tz-v1.0.pdf`. Talab ID'lari PRD bilan bir xil.
 
 Belgilar: `[x]` bajarildi · `[~]` jarayonda · `[ ]` boshlanmagan
 
-**Hozir:** R0 · 3-hafta (branch `r0/hafta-3-kadrlar`). Xodim kartasi, maxfiy maydonlar va Excel import tayyor. Keyingisi — 4-hafta (kadr hodisalari). Telefon orqali kirish Telegram Gateway tokenini kutyapti.
+**Hozir:** R0 · 4-hafta (branch `r0/hafta-4-kadr-hodisalari`). Kadr hodisalari, holat, kalendar, ta'til qoldig'i tayyor. Keyingisi — 5-hafta (hujjatlar, eslatmalar, Telegram bot). Telefon orqali kirish Telegram Gateway tokenini kutyapti.
 
 ---
 
@@ -39,7 +39,12 @@ Belgilar: `[x]` bajarildi · `[~]` jarayonda · `[ ]` boshlanmagan
 - [x] 3: Xodim kartasi, lavozim, bo'lim — 7/7 test
 - [x] 3: Maxfiy maydonlar (pasport, JShShIR, karta) — faqat ruxsatli rolga; har o'qish jurnalga, o'zgarish niqoblangan holda
 - [x] 3: Excel import — 100 xodim 11,4 soniyada (mezon 60 s); xato bo'lsa qator/ustun, hech narsa yozilmaydi — 6/6 test
-- [ ] 4: Kadr hodisalari, holatni avtomatik hisoblash, kadr kalendari, ta'til qoldig'i
+- [x] 4: Kadr hodisalari — sana va asos hujjat bilan; ustma-ust oraliq va bo'shagandan keyingi hodisa rad etiladi
+- [x] 4: Holat avtomatik (ishda/ta'tilda/dikretda/kasal/safarda/bo'shagan) — AC-3 testlangan
+- [x] 4: Kadr kalendari + bo'limda ko'p odam yo'qligi ogohlantirishi (standart: 30% va ≥2 kishi — PRD'da chegara yo'q)
+- [x] 4: Ta'til qoldig'i — ish yili bo'yicha, standart 21 kalendar kun
+- [x] 4: Hodisalar o'chirilmaydi, faqat sababi bilan bekor qilinadi (trigger bilan himoyalangan)
+- [ ] 4: Kelajak sanali o'tkazishni kuni kelganda kartaga qo'llash — worker bilan (5-hafta)
 - [ ] 5: Hujjatlar va maxfiylik, muddat eslatmalari, Telegram bot, bildirishnomalar
 - [ ] 6: Bosh sahifa v1, uz/ru, e2e testlar, asoschi mijozga ishga tushirish
 
@@ -50,13 +55,18 @@ Belgilar: `[x]` bajarildi · `[~]` jarayonda · `[ ]` boshlanmagan
 - [~] CORE-04 Rollar va ruxsatlar — modul/amal/qamrov tayyor; ega o'z rolini yaratish UI'si va maxfiy maydon darajasi keyin
 - [x] CORE-05 Ega va moliya rollariga 2FA — majburiy, testlangan
 - [~] CORE-06 Audit jurnali — jadval va himoya tayyor; maxfiy maydonni o'qishni yozish HR moduli bilan (3-hafta)
-- [ ] CORE-07 O'chirilmas tarix
+- [~] CORE-07 O'chirilmas tarix — audit jurnali va kadr hodisalari himoyalangan; moliya/ombor hujjatlari R1–R2 da
 - [ ] CORE-08 O'zbek va rus interfeysi
 - [ ] CORE-09 Global qidiruv
 - [ ] CORE-10 Bildirishnomalar markazi
 - [x] HR-01 Xodim kartasi (maxfiy maydonlar bilan)
 - [x] HR-02 Lavozim, bo'lim, rahbar, ish jadvali, shartnoma turi
-- [ ] HR-03 … HR-08 Kadr hodisalari, holat, kalendar, eslatmalar, hujjatlar
+- [x] HR-03 Kadr hodisalari
+- [x] HR-04 Xodim holati avtomatik
+- [x] HR-05 Kadr kalendari va ogohlantirish
+- [x] HR-06 Ta'til qoldig'i
+- [ ] HR-07 Muddat eslatmalari (5-hafta)
+- [ ] HR-08 Xodim hujjatlari (5-hafta)
 - [x] HR-11 Xodimlarni Excel'dan import (xatolarni ko'rsatish bilan)
 - [ ] DOC-01/02 Fayllar va maxfiylik darajasi
 - [ ] TG-01 Telegram bot: bildirishnomalar

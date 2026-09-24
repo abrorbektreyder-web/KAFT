@@ -1,7 +1,7 @@
 // Yadro sxemasi (PRD 9.1–9.2). Har jadvalda tenant_id; ajratish RLS bilan (migrations/*_rls.sql).
 import { sql } from 'drizzle-orm';
 import {
-  bigint, boolean, char, date, foreignKey, index, jsonb, pgTable, primaryKey, text, timestamp, unique, uuid,
+  bigint, boolean, char, date, foreignKey, index, integer, jsonb, pgTable, primaryKey, text, timestamp, unique, uuid,
 } from 'drizzle-orm/pg-core';
 import { authUser } from './auth-schema.ts';
 
@@ -170,6 +170,8 @@ export const employees = pgTable('employees', {
   workSchedule: text('work_schedule'),
   contractType: text('contract_type'),
   hiredAt: date('hired_at'),
+  // HR-06: yillik ta'til (kalendar kun). Mehnat kodeksi bo'yicha minimum 21
+  annualLeaveDays: integer('annual_leave_days').notNull().default(21),
   createdAt: createdAt(),
 }, (t) => [
   unique('employees_tenant_id_id_key').on(t.tenantId, t.id),
@@ -191,4 +193,27 @@ export const employeeSecrets = pgTable('employee_secrets', {
   primaryKey({ columns: [t.tenantId, t.employeeId] }),
   unique('employee_secrets_tenant_jshshir_key').on(t.tenantId, t.jshshir),
   foreignKey({ columns: [t.tenantId, t.employeeId], foreignColumns: [employees.tenantId, employees.id] }).onDelete('cascade'),
+]);
+
+// HR-03: kadr hodisalari. O'chirilmaydi — faqat sababi bilan bekor qilinadi (CORE-07, migrations/*_hr_events_guard.sql)
+export const employmentEvents = pgTable('employment_events', {
+  id: id(),
+  tenantId: tenantId(),
+  employeeId: uuid('employee_id').notNull(),
+  // hire | transfer | position_change | salary_change | vacation | maternity | sick | business_trip | termination
+  type: text('type').notNull(),
+  startsOn: date('starts_on').notNull(),
+  endsOn: date('ends_on'),
+  /** Asos hujjat: buyruq raqami, ariza, kasallik varaqasi */
+  basis: text('basis'),
+  payload: jsonb('payload'),
+  createdBy: uuid('created_by'),
+  createdAt: createdAt(),
+  cancelledAt: timestamp('cancelled_at', { withTimezone: true }),
+  cancelReason: text('cancel_reason'),
+  cancelledBy: uuid('cancelled_by'),
+}, (t) => [
+  foreignKey({ columns: [t.tenantId, t.employeeId], foreignColumns: [employees.tenantId, employees.id] }).onDelete('cascade'),
+  index('employment_events_employee_idx').on(t.tenantId, t.employeeId),
+  index('employment_events_period_idx').on(t.tenantId, t.startsOn),
 ]);
