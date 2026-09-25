@@ -1,15 +1,12 @@
 "use client";
 // Pul sahifasi formalari: kirim/chiqim, o'tkazma (ayirboshlash), kassa ochish, bekor qilish — yon panelda.
-import { useActionState, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { toast } from "sonner";
 import { ArrowDownLeft, ArrowLeftRight, ArrowUpRight, Plus, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { addAccount, addTransaction, addTransfer, cancelTx, type ActionResult } from "./actions";
+import { Field, FormSheet, Picker, useSheetForm } from "@/components/sheet-form";
+import { addAccount, addTransaction, addTransfer, cancelTx } from "./actions";
 
 type Account = { id: string; name: string; currency: string; isArchived: boolean };
 type Category = { id: string; name: string; direction: "in" | "out" };
@@ -18,70 +15,8 @@ type Named = { id: string; name: string };
 const CURRENCIES = ["UZS", "USD", "EUR", "RUB"] as const;
 const TYPES = ["cash", "bank", "card", "payment"] as const;
 
-/** Yon panelli forma: muvaffaqiyatda yopiladi, xatoda xabar ko'rsatadi. */
-function useSheetForm(action: (s: ActionResult, f: FormData) => Promise<ActionResult>) {
-  const t = useTranslations("money");
-  const [open, setOpen] = useState(false);
-  const [, formAction, pending] = useActionState(async (prev: ActionResult, f: FormData) => {
-    const res = await action(prev, f);
-    if (res?.ok) {
-      toast.success(t("saved"));
-      setOpen(false);
-    } else if (res) {
-      toast.error(res.error);
-    }
-    return res;
-  }, null);
-  return { open, setOpen, formAction, pending };
-}
-
-function Field({ id, label, hint, children }: { id: string; label: string; hint?: string; children: React.ReactNode }) {
-  return (
-    <div className="grid gap-1.5">
-      <Label htmlFor={id}>{label}</Label>
-      {children}
-      {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
-    </div>
-  );
-}
-
-function Picker({ id, name, items, value, onChange, required = true }: {
-  id: string; name: string; items: { value: string; label: string }[]; value?: string; onChange?: (v: string) => void; required?: boolean;
-}) {
-  const t = useTranslations("money");
-  return (
-    <Select name={name} value={value} onValueChange={onChange} required={required}>
-      <SelectTrigger id={id} className="h-11 w-full"><SelectValue placeholder={t("choose")} /></SelectTrigger>
-      <SelectContent>
-        {items.map((i) => <SelectItem key={i.value} value={i.value}>{i.label}</SelectItem>)}
-      </SelectContent>
-    </Select>
-  );
-}
-
-function FormSheet({ trigger, title, description, form, children }: {
-  trigger: React.ReactNode; title: string; description?: string; form: ReturnType<typeof useSheetForm>; children: React.ReactNode;
-}) {
-  const t = useTranslations("money");
-  return (
-    <Sheet open={form.open} onOpenChange={form.setOpen}>
-      <SheetTrigger asChild>{trigger}</SheetTrigger>
-      <SheetContent className="w-full overflow-y-auto sm:max-w-md">
-        <SheetHeader>
-          <SheetTitle>{title}</SheetTitle>
-          {description && <SheetDescription>{description}</SheetDescription>}
-        </SheetHeader>
-        <form action={form.formAction} className="grid gap-4 px-4 pb-6">
-          {children}
-          <Button type="submit" disabled={form.pending} className="h-11">{t("save")}</Button>
-        </form>
-      </SheetContent>
-    </Sheet>
-  );
-}
-
-export function TransactionSheet({ direction, accounts, categories, today }: {
-  direction: "in" | "out"; accounts: Account[]; categories: Category[]; today: string;
+export function TransactionSheet({ direction, accounts, categories, counterparties, today }: {
+  direction: "in" | "out"; accounts: Account[]; categories: Category[]; counterparties: Named[]; today: string;
 }) {
   const t = useTranslations("money");
   const form = useSheetForm(addTransaction);
@@ -106,6 +41,12 @@ export function TransactionSheet({ direction, accounts, categories, today }: {
         <Picker id={`${direction}-category`} name="categoryId"
           items={categories.filter((c) => c.direction === direction).map((c) => ({ value: c.id, label: c.name }))} />
       </Field>
+      {counterparties.length > 0 && (
+        <Field id={`${direction}-cp`} label={t("fCounterparty")}>
+          <Picker id={`${direction}-cp`} name="counterpartyId" required={false}
+            items={[{ value: "none", label: t("fNoCounterparty") }, ...counterparties.map((c) => ({ value: c.id, label: c.name }))]} />
+        </Field>
+      )}
       <Field id={`${direction}-date`} label={t("fDate")}>
         <Input id={`${direction}-date`} name="occurredOn" type="date" defaultValue={today} max={today} required className="h-11" />
       </Field>

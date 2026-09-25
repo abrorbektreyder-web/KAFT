@@ -1,7 +1,7 @@
 // Yadro sxemasi (PRD 9.1–9.2). Har jadvalda tenant_id; ajratish RLS bilan (migrations/*_rls.sql).
 import { sql } from 'drizzle-orm';
 import {
-  bigint, boolean, char, check, date, foreignKey, index, integer, jsonb, numeric, pgTable, primaryKey, text, timestamp, unique, uuid,
+  bigint, boolean, char, check, date, foreignKey, index, integer, jsonb, numeric, pgTable, primaryKey, text, timestamp, unique, uniqueIndex, uuid,
 } from 'drizzle-orm/pg-core';
 import { authUser } from './auth-schema.ts';
 
@@ -299,6 +299,84 @@ export const telegramLinkCodes = pgTable('telegram_link_codes', {
   index('telegram_link_codes_hash_idx').on(t.codeHash),
 ]);
 
+// ---------------------------------------------------------------- Kontragentlar (CP, R1)
+
+// CP-01/02/05: yagona kontragent kartasi — butun tenant (holding) uchun umumiy; bir kontragentda bir nechta rol.
+export const counterparties = pgTable('counterparties', {
+  id: id(),
+  tenantId: tenantId(),
+  name: text('name').notNull(),
+  /** customer (mijoz) | wholesale (ulgurji hamkor) | supplier (ta'minotchi) */
+  roles: text('roles').array().notNull(),
+  stir: text('stir'),
+  address: text('address'),
+  contactPerson: text('contact_person'),
+  phone: text('phone'),
+  bankName: text('bank_name'),
+  bankMfo: text('bank_mfo'),
+  bankAccount: text('bank_account'),
+  /** Mas'ul menejer — savdo menejerining «faqat o'ziniki» qamrovi shu bo'yicha */
+  managerUserId: uuid('manager_user_id'),
+  /** Kredit limiti tiyin/sentda; limitdan oshsa sotuv tasdiq bilan (SAL, 9-hafta) */
+  creditLimit: bigint('credit_limit', { mode: 'number' }),
+  creditCurrency: char('credit_currency', { length: 3 }).notNull().default('UZS'),
+  paymentTermDays: integer('payment_term_days'),
+  note: text('note'),
+  isArchived: boolean('is_archived').notNull().default(false),
+  createdAt: createdAt(),
+}, (t) => [
+  unique('counterparties_tenant_id_id_key').on(t.tenantId, t.id),
+  unique('counterparties_tenant_stir_key').on(t.tenantId, t.stir),
+  foreignKey({ columns: [t.tenantId, t.managerUserId], foreignColumns: [users.tenantId, users.id] }),
+  check('counterparties_roles_check', sql`cardinality(${t.roles}) > 0 and ${t.roles} <@ array['customer', 'wholesale', 'supplier']`),
+  index('counterparties_name_idx').on(t.tenantId, t.name),
+]);
+
+// CP-08: shartnomalar. Fayl — documents (owner_type = counterparty) orqali.
+export const contracts = pgTable('contracts', {
+  id: id(),
+  tenantId: tenantId(),
+  counterpartyId: uuid('counterparty_id').notNull(),
+  number: text('number').notNull(),
+  signedOn: date('signed_on').notNull(),
+  endsOn: date('ends_on'),
+  amount: bigint('amount', { mode: 'number' }),
+  currency: char('currency', { length: 3 }).notNull().default('UZS'),
+  documentId: uuid('document_id'),
+  note: text('note'),
+  createdBy: uuid('created_by'),
+  createdAt: createdAt(),
+}, (t) => [
+  unique('contracts_tenant_id_id_key').on(t.tenantId, t.id),
+  foreignKey({ columns: [t.tenantId, t.counterpartyId], foreignColumns: [counterparties.tenantId, counterparties.id] }).onDelete('cascade'),
+  index('contracts_ends_on_idx').on(t.tenantId, t.endsOn),
+]);
+
+// Tasdiqlash huquqi yo'q foydalanuvchining tahriri — ega tasdiqlagach kuchga kiradi (egasi qarori, 2026-09-25).
+export const changeRequests = pgTable('change_requests', {
+  id: id(),
+  tenantId: tenantId(),
+  // counterparty | contract
+  entity: text('entity').notNull(),
+  entityId: uuid('entity_id').notNull(),
+  /** Ko'rsatish uchun nom (so'rov paytidagi) */
+  entityName: text('entity_name').notNull(),
+  /** { maydon: { from, to } } — faqat haqiqatan o'zgargan maydonlar */
+  changes: jsonb('changes').notNull(),
+  // pending | approved | rejected
+  status: text('status').notNull().default('pending'),
+  requestedBy: uuid('requested_by').notNull(),
+  requestedAt: createdAt(),
+  decidedBy: uuid('decided_by'),
+  decidedAt: timestamp('decided_at', { withTimezone: true }),
+  decisionReason: text('decision_reason'),
+}, (t) => [
+  foreignKey({ columns: [t.tenantId, t.requestedBy], foreignColumns: [users.tenantId, users.id] }).onDelete('cascade'),
+  // Bir obyekt bo'yicha bir vaqtda bitta kutilayotgan so'rov
+  uniqueIndex('change_requests_one_pending').on(t.tenantId, t.entity, t.entityId).where(sql`${t.status} = 'pending'`),
+  check('change_requests_status_check', sql`${t.status} in ('pending', 'approved', 'rejected')`),
+]);
+
 // ---------------------------------------------------------------- Pul (FIN, R1)
 
 // FIN-01: kassalar va hisoblar. Valyuta keyin o'zgarmaydi — operatsiyalar (tenant_id, id, currency) ga bog'langan.
@@ -354,7 +432,7 @@ export const cashTransactions = pgTable('cash_transactions', {
   /** Operatsiya kursi: 1 birlik = N so'm. Standart — Markaziy bank, qo'lda o'zgartirish mumkin (FIN-03) */
   rate: numeric('rate', { precision: 20, scale: 6 }),
   categoryId: uuid('category_id'),
-  /** Kontragent (8-hafta: counterparties bilan bog'lanadi) */
+  /** Kontragent (CP-03: kartada to'lovlar) */
   counterpartyId: uuid('counterparty_id'),
   transferId: uuid('transfer_id'),
   occurredOn: date('occurred_on').notNull(),
@@ -369,6 +447,7 @@ export const cashTransactions = pgTable('cash_transactions', {
 }, (t) => [
   foreignKey({ columns: [t.tenantId, t.accountId, t.currency], foreignColumns: [cashAccounts.tenantId, cashAccounts.id, cashAccounts.currency] }).onDelete('cascade'),
   foreignKey({ columns: [t.tenantId, t.categoryId], foreignColumns: [expenseCategories.tenantId, expenseCategories.id] }),
+  foreignKey({ columns: [t.tenantId, t.counterpartyId], foreignColumns: [counterparties.tenantId, counterparties.id] }),
   check('cash_transactions_amount_check', sql`${t.amount} > 0`),
   check('cash_transactions_direction_check', sql`${t.direction} in ('in', 'out')`),
   check('cash_transactions_kind_check', sql`${t.kind} in ('opening', 'income', 'expense', 'transfer')`),

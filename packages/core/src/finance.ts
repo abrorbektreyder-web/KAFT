@@ -30,7 +30,7 @@ export const DEFAULT_CATEGORIES: { name: string; nameRu: string; direction: Dire
 ];
 
 export type FinErrorCode = 'amount' | 'date' | 'currency' | 'cbu' | 'name' | 'accountNotFound' | 'accountType' | 'rate' | 'direction'
-  | 'category' | 'archived' | 'categoryDirection' | 'sameAccount' | 'toAmountRequired' | 'amountsMismatch' | 'reason' | 'notFound' | 'alreadyCancelled';
+  | 'category' | 'counterparty' | 'archived' | 'categoryDirection' | 'sameAccount' | 'toAmountRequired' | 'amountsMismatch' | 'reason' | 'notFound' | 'alreadyCancelled';
 
 /** Pul moduli xatosi: `code` — interfeysda o'quvchi tilidagi matn uchun, `message` — o'zbekcha nusxa. */
 export class FinError extends Error {
@@ -228,6 +228,10 @@ export async function recordTransaction(db: Db, ctx: Ctx, input: NewTransaction)
       .where(eq(schema.expenseCategories.id, input.categoryId));
     if (!c) throw new FinError('category', 'Modda topilmadi');
     if (c.direction !== input.direction) throw new FinError('categoryDirection', input.direction === 'in' ? 'Kirim uchun kirim moddasini tanlang' : 'Chiqim uchun chiqim moddasini tanlang');
+    if (input.counterpartyId) {
+      const [cp] = await tx.select({ id: schema.counterparties.id }).from(schema.counterparties).where(eq(schema.counterparties.id, input.counterpartyId));
+      if (!cp) throw new FinError('counterparty', 'Kontragent topilmadi');
+    }
 
     const [row] = await tx.insert(schema.cashTransactions).values({
       tenantId: ctx.tenantId, accountId: acc.id, kind: input.direction === 'in' ? 'income' : 'expense', direction: input.direction,

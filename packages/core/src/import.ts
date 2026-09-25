@@ -4,6 +4,7 @@ import ExcelJS from 'exceljs';
 import { and, eq, inArray, schema, withTenant, type Db, type Tx } from '@kaft/db';
 import { authorize, deny, type Ctx } from './permissions.ts';
 import { secretError, type EmployeeInput, type Secrets } from './employees.ts';
+import { CpError, normalizeCounterparty, type CounterpartyInput, type CounterpartyPatch, type CounterpartyRole } from './counterparties.ts';
 
 type Key = 'lastName' | 'firstName' | 'middleName' | 'birthDate' | 'phone' | 'department' | 'position'
   | 'hiredAt' | 'contractType' | 'passport' | 'jshshir' | 'bankCard' | 'departmentRu' | 'positionRu';
@@ -200,6 +201,137 @@ export async function importEmployees(db: Db, ctx: Ctx, file: Buffer | ArrayBuff
     const secretRows = rows.flatMap((r, i) => (Object.keys(r.data.secrets).length ? [{ ...r.data.secrets, tenantId: ctx.tenantId, employeeId: inserted[i]!.id }] : []));
     if (secretRows.length) await tx.insert(schema.employeeSecrets).values(secretRows);
     await tx.insert(schema.auditLog).values(inserted.map((e) => ({ tenantId: ctx.tenantId, actorUserId: ctx.userId, action: 'create', entity: 'employee', entityId: e.id, meta: { source: 'excel' } })));
+  });
+  return { ok: true, imported: rows.length };
+}
+
+// ---------------------------------------------------------------- kontragentlar (CP-10, INT-01)
+// Boshlang'ich qarzlar importi — qarz qoidasi hal bo'lgach (9-hafta).
+
+type CpKey = 'name' | 'roles' | 'stir' | 'phone' | 'address' | 'contactPerson' | 'bankName' | 'bankMfo' | 'bankAccount' | 'creditLimit' | 'paymentTermDays';
+
+export const COUNTERPARTY_COLUMNS: { key: CpKey; title: string; required?: boolean; width: number }[] = [
+  { key: 'name', title: 'Nomi*', required: true, width: 32 },
+  { key: 'roles', title: 'Rollar*', required: true, width: 24 },
+  { key: 'stir', title: 'STIR', width: 13 },
+  { key: 'phone', title: 'Telefon', width: 16 },
+  { key: 'address', title: 'Manzil', width: 30 },
+  { key: 'contactPerson', title: 'Mas’ul shaxs', width: 22 },
+  { key: 'bankName', title: 'Bank', width: 18 },
+  { key: 'bankMfo', title: 'MFO', width: 8 },
+  { key: 'bankAccount', title: 'Hisob raqami', width: 24 },
+  { key: 'creditLimit', title: 'Kredit limiti (so‘m)', width: 18 },
+  { key: 'paymentTermDays', title: 'To‘lov muddati (kun)', width: 18 },
+];
+
+// Excel'dagi rol so'zlari (apostrof har xil yozilishi mumkin — oldin ' ga keltiriladi)
+const ROLE_WORDS: Record<string, CounterpartyRole> = {
+  mijoz: 'customer', ulgurji: 'wholesale', 'ulgurji hamkor': 'wholesale', "ta'minotchi": 'supplier',
+  клиент: 'customer', покупатель: 'customer', оптовик: 'wholesale', поставщик: 'supplier',
+};
+
+export async function buildCounterpartyTemplate(): Promise<ExcelJS.Buffer> {
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet('Kontragentlar', { views: [{ state: 'frozen', ySplit: 1 }] });
+  ws.columns = COUNTERPARTY_COLUMNS.map((c) => ({ header: c.title, key: c.key, width: c.width }));
+  ws.getRow(1).font = { bold: true };
+  const help = wb.addWorksheet('Yo‘riqnoma');
+  [
+    ['* belgili ustunlar majburiy.'],
+    ['Rollar: mijoz, ulgurji hamkor, ta’minotchi — bir nechtasi vergul bilan (masalan: mijoz, ta’minotchi).'],
+    ['STIR: 9 raqam, takrorlanmaydi · MFO: 5 raqam · Hisob raqami: 20 raqam.'],
+    ['Telefon: 901234567 yoki +998901234567.'],
+    ['Kredit limiti — so‘mda (masalan 50000000); to‘lov muddati — kunda.'],
+  ].forEach((r) => help.addRow(r));
+  help.getColumn(1).width = 90;
+  return wb.xlsx.writeBuffer();
+}
+
+const cellStr = (v: string | Date | null) => (v == null ? null : v instanceof Date ? v.toISOString().slice(0, 10) : v);
+
+/** Kontragentlarni Excel'dan import (hammasi yoki hech narsa). */
+export async function importCounterparties(db: Db, ctx: Ctx, file: Buffer | ArrayBuffer): Promise<ImportResult> {
+  if ((await authorize(db, ctx, 'cp', 'create')) !== 'all') await deny(db, ctx, 'cp', 'create');
+  const wb = new ExcelJS.Workbook();
+  await wb.xlsx.load(file as ArrayBuffer);
+  const ws = wb.getWorksheet('Kontragentlar') ?? wb.worksheets[0];
+  if (!ws) return { ok: false, errors: [{ row: 0, column: '', message: 'Faylda varaq topilmadi' }] };
+
+  const colOf = new Map<CpKey, number>();
+  ws.getRow(1).eachCell((cell, n) => {
+    const col = COUNTERPARTY_COLUMNS.find((c) => c.title === text(cell.value));
+    if (col) colOf.set(col.key, n);
+  });
+  const errors: ImportError[] = COUNTERPARTY_COLUMNS.filter((c) => c.required && !colOf.has(c.key))
+    .map((c) => ({ row: 1, column: c.title, message: 'Majburiy ustun topilmadi — shablondan foydalaning' }));
+  if (errors.length) return { ok: false, errors };
+
+  const title = (k: string) => COUNTERPARTY_COLUMNS.find((c) => c.key === k)?.title ?? k;
+  const rows: { row: number; data: CounterpartyInput }[] = [];
+  ws.eachRow((r, n) => {
+    if (n === 1) return;
+    const get = (k: CpKey) => (colOf.has(k) ? cellStr(text(r.getCell(colOf.get(k)!).value)) : null);
+    if (COUNTERPARTY_COLUMNS.every((c) => get(c.key) == null)) return;
+    const rowErrors: ImportError[] = [];
+    const bad = (k: string, message: string) => rowErrors.push({ row: n, column: title(k), message });
+
+    const roles: CounterpartyRole[] = [];
+    for (const w of (get('roles') ?? '').split(/[,;]/).map((x) => x.trim().toLowerCase().replace(/[’‘ʼ`]/g, "'")).filter(Boolean)) {
+      const role = ROLE_WORDS[w];
+      if (role) roles.push(role);
+      else bad('roles', `Rol noma’lum: «${w}» — mijoz, ulgurji hamkor yoki ta’minotchi`);
+    }
+    const num = (k: CpKey, scale: number) => {
+      const v = get(k);
+      if (v == null) return null;
+      const s = v.replace(/[\s ]/g, '').replace(',', '.');
+      if (!/^\d+(\.\d{1,2})?$/.test(s)) {
+        bad(k, 'Son noto‘g‘ri');
+        return null;
+      }
+      return Math.round(Number(s) * scale);
+    };
+    const input: CounterpartyInput = {
+      name: get('name') ?? '', roles, stir: get('stir'), phone: get('phone'), address: get('address'), contactPerson: get('contactPerson'),
+      bankName: get('bankName'), bankMfo: get('bankMfo'), bankAccount: get('bankAccount'),
+      creditLimit: num('creditLimit', 100), paymentTermDays: num('paymentTermDays', 1),
+    };
+    // Maydonlarni bittalab tekshiramiz — qatordagi hamma xato ko'rinsin
+    for (const k of Object.keys(input) as (keyof CounterpartyInput)[]) {
+      if (rowErrors.some((e) => e.column === title(k))) continue;
+      try {
+        normalizeCounterparty({ [k]: input[k] } as CounterpartyPatch, false);
+      } catch (e) {
+        if (e instanceof CpError) bad(e.field ?? k, e.message);
+        else throw e;
+      }
+    }
+    if (rowErrors.length) errors.push(...rowErrors);
+    else rows.push({ row: n, data: normalizeCounterparty(input, true) as CounterpartyInput });
+  });
+
+  // STIR: fayl ichida va bazada takrorlanmasin
+  const seen = new Map<string, number>();
+  for (const { row, data } of rows) {
+    if (!data.stir) continue;
+    if (seen.has(data.stir)) errors.push({ row, column: 'STIR', message: `Takrorlangan — ${seen.get(data.stir)}-qatorda ham bor` });
+    else seen.set(data.stir, row);
+  }
+  if (seen.size) {
+    const taken = await withTenant(db, ctx.tenantId, (tx) => tx.select({ stir: schema.counterparties.stir }).from(schema.counterparties)
+      .where(inArray(schema.counterparties.stir, [...seen.keys()])));
+    for (const t of taken) errors.push({ row: seen.get(t.stir!)!, column: 'STIR', message: 'Bu STIR bilan kontragent allaqachon bor' });
+  }
+  if (!rows.length && !errors.length) return { ok: false, errors: [{ row: 0, column: '', message: 'Fayl bo‘sh — kamida bitta qator kerak' }] };
+  if (errors.length) {
+    const order = new Map(COUNTERPARTY_COLUMNS.map((c, i) => [c.title, i]));
+    return { ok: false, errors: errors.sort((a, b) => a.row - b.row || (order.get(a.column) ?? 0) - (order.get(b.column) ?? 0)) };
+  }
+
+  await withTenant(db, ctx.tenantId, async (tx) => {
+    const inserted = await tx.insert(schema.counterparties).values(rows.map((r) => ({ ...r.data, tenantId: ctx.tenantId })))
+      .returning({ id: schema.counterparties.id });
+    await tx.insert(schema.auditLog).values(inserted.map((c) => ({ tenantId: ctx.tenantId, actorUserId: ctx.userId, action: 'create', entity: 'counterparty', entityId: c.id, meta: { source: 'excel' } })));
   });
   return { ok: true, imported: rows.length };
 }

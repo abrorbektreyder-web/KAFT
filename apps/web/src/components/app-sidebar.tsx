@@ -17,7 +17,7 @@ const NAV = [
   { group: "main", items: [
     { href: "/", key: "home", icon: Home },
     { href: "/pul", key: "money", icon: Wallet },
-    { href: "/kontragentlar", key: "counterparties", icon: Building2, soon: "R1" },
+    { href: "/kontragentlar", key: "counterparties", icon: Building2 },
     { href: "/savdo", key: "sales", icon: ShoppingCart, soon: "R1" },
     { href: "/xarid", key: "purchases", icon: Truck, soon: "R1" },
     { href: "/ombor", key: "warehouse", icon: Box, soon: "R2" },
@@ -63,7 +63,7 @@ export function AppSidebar({ brand, user }: { brand: string; user: { name: strin
                         <it.icon /><span>{label}</span>
                       </SidebarMenuButton>
                     ) : (
-                      <SidebarMenuButton asChild isActive={pathname === it.href}>
+                      <SidebarMenuButton asChild isActive={it.href === "/" ? pathname === "/" : pathname.startsWith(it.href)}>
                         <Link href={it.href}><it.icon /><span>{label}</span></Link>
                       </SidebarMenuButton>
                     )}

@@ -1,9 +1,9 @@
-// CORE-09: global qidiruv. Hozir — xodimlar va hujjatlar; kontragent (R1) va tovar (R2) modullari bilan qo'shiladi.
+// CORE-09: global qidiruv — xodimlar, kontragentlar, hujjatlar; tovar (R2) o'z moduli bilan qo'shiladi.
 import { and, eq, ilike, or, schema, withTenant, type Db } from '@kaft/db';
 import { can, type Ctx } from './permissions.ts';
 import { canSee, viewer } from './documents.ts';
 
-export interface SearchHit { type: 'employee' | 'document'; id: string; title: string; subtitle?: string; href: string }
+export interface SearchHit { type: 'employee' | 'counterparty' | 'document'; id: string; title: string; subtitle?: string; href: string }
 
 const LIMIT = 20;
 // ILIKE uchun maxsus belgilar oddiy matn bo'lib qoladi
@@ -26,6 +26,15 @@ export async function search(db: Db, ctx: Ctx, query: string): Promise<SearchHit
         ))
         .limit(LIMIT);
       hits.push(...rows.map((r) => ({ type: 'employee' as const, id: r.id, title: `${r.lastName} ${r.firstName}`, subtitle: r.phone ?? undefined, href: `/kadrlar/${r.id}` })));
+    }
+    const cpScope = await can(tx, ctx.userId, 'cp', 'view');
+    if (cpScope) {
+      const c = schema.counterparties;
+      const rows = await tx.select({ id: c.id, name: c.name, stir: c.stir }).from(c).where(and(
+        or(ilike(c.name, pattern), ilike(c.stir, pattern), ilike(c.phone, pattern)),
+        cpScope === 'own' ? eq(c.managerUserId, ctx.userId) : undefined,
+      )).limit(LIMIT);
+      hits.push(...rows.map((r) => ({ type: 'counterparty' as const, id: r.id, title: r.name, subtitle: r.stir ? `STIR ${r.stir}` : undefined, href: `/kontragentlar/${r.id}` })));
     }
     const v = await viewer(tx, ctx);
     if (v.docScope) {

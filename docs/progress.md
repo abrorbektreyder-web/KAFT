@@ -4,7 +4,7 @@ Manba: `docs/prd-tz-v1.0.pdf`. Talab ID'lari PRD bilan bir xil.
 
 Belgilar: `[x]` bajarildi · `[~]` jarayonda · `[ ]` boshlanmagan
 
-**Hozir:** R1 · 7-hafta boshlandi (branch `r1/hafta-7-kassalar`). R0 (1–6 hafta) yakunlandi; undan qolgani — asoschi mijozga ishga tushirish (server tanlanganda). Kutilmoqda: Telegram bot tokeni, Telegram Gateway tokeni, server provayderi, ko'p valyutali qarz qoidasi (9-haftagacha).
+**Hozir:** R1 · 8-hafta (branch `r1/hafta-8-kontragentlar`). 7-hafta (pul) yakunlandi. Kutilmoqda: ko'p valyutali qarz qoidasi (9-hafta boshida), Telegram bot tokeni, Telegram Gateway tokeni, server provayderi.
 
 ---
 
@@ -108,9 +108,22 @@ Haftalik reja (PRD'da R1 bo'yicha haftalik bo'linish yo'q — 2026-09-25 da keli
 - [x] «Pul» sahifasi: jami va kompaniyalar, kassalar jadvali, oxirgi operatsiyalar, kirim/chiqim/o'tkazma/kassa ochish formalari (uz/ru)
 - [x] Demo ma'lumot: 7 kassa, 3 haftalik tushum va xarajatlar, inkassatsiya, dollar sotish
 
+### 8-hafta: kontragentlar
+- [x] CP-01 Yagona kontragent kartasi; rollar: mijoz, ulgurji hamkor, ta'minotchi (bir nechtasi birga); butun holding uchun umumiy
+- [x] CP-02 Rekvizitlar: STIR (9 raqam, takrorlanmaydi), manzil, mas'ul shaxs, telefon, bank (nomi, MFO, hisob raqami), mas'ul menejer
+- [~] CP-03 360° — hozir: rekvizitlar, shartnomalar, to'lovlar; sotuv/xarid va ikki tomonlama qarz — 9-hafta
+- [~] CP-05 Kredit limiti va to'lov muddati — saqlanadi; «limitdan oshsa sotuv tasdiq bilan» — 9-hafta (sotuv bilan)
+- [x] CP-08 Shartnomalar: raqam, sana, muddat, summa va valyuta; tugashiga 30 kun qolganda eslatma (ega, buxgalter, mas'ul menejer; uz/ru, Telegram)
+- [~] CP-10 Kontragentlarni Excel'dan import (shablon, qator/ustun xatolari, hammasi yoki hech narsa) — tayyor; boshlang'ich qarzlar — 9-hafta
+- [x] Tahrir tasdig'i: buxgalter va savdo menejeri tahriri — so'rov, ega tasdiqlagach kuchga kiradi (eski → yangi ko'rinadi; ziddiyat tekshiriladi; ikkala tomonga xabar)
+- [x] Ruxsatlar PRD 8 bo'yicha: savdo menejeri — faqat o'z mijozlari; direktor, kassir, omborchi — ko'radi; HR — yo'q
+- [x] Kirim/chiqimda kontragent tanlanadi (bazada bog'langan); global qidiruvda kontragent (nom, STIR, telefon)
+- [x] «Kontragentlar» sahifalari: ro'yxat (qidiruv, rol filtri), karta, qo'shish/tahrirlash, shartnoma, Excel import, tasdiq so'rovlari (uz/ru)
+- [x] Demo: 8 kontragent, 4 shartnoma
+
 ### R1 talablari
 - [ ] Ko'p valyutali qarz qoidasi (9-haftagacha hal qilinadi)
-- [~] FIN-01…08, FIN-10 — 01…04 tayyor (7-hafta) · CP-01…05, CP-08, CP-10 · SAL-01/02/05/07 · PUR-01/05
+- [~] FIN-01…08, FIN-10 — 01…04 tayyor (7-hafta) · CP-01/02/08 tayyor, CP-03/05/10 qisman (8-hafta), CP-04 · SAL-01/02/05/07 · PUR-01/05
 - [~] INT-02 tayyor · INT-03/04 · CTL-05 · CORE-11/12 · HR-09 · DOC-03/04
 
 ## R2 — Operatsiya va nazorat (13–18 hafta)
@@ -128,6 +141,8 @@ Haftalik reja (PRD'da R1 bo'yicha haftalik bo'linish yo'q — 2026-09-25 da keli
 - 2026-09-25: Valyutalar — UZS, USD, EUR, RUB. Summalar tiyin/sentda (bigint), kurs `numeric(20,6)`, hisob BigInt bilan (kasr xatosiz).
 - 2026-09-25: Markaziy bank kurslari (`exchange_rates`) — hamma mijozlarga umumiy ma'lumot, tenant_id yo'q; ilova faqat o'qiydi, worker yozadi.
 - 2026-09-25: Kassir o'tkazmani faqat o'z kassasidan qiladi (masalan, inkassatsiya); qabul qiluvchi kassa ixtiyoriy.
+- 2026-09-25: Egasi qarori — tasdiqlash huquqi yo'q foydalanuvchi (buxgalter, savdo menejeri) tahriri ega tasdiqlagach kuchga kiradi (PRD 8 dagi «Y» dan qat'iyroq). Yangi yozuv qo'shish — tasdiqsiz. Keyingi modullarda ham shu mexanizm.
+- 2026-09-25: Kontragent — butun tenant (holding) uchun umumiy karta; STIR tenant ichida takrorlanmaydi.
 - 2026-09-24: Bitta kod bazasi, ko'p mijoz; moslashtirish tenant sozlamalari va modul kalitlari orqali.
 - 2026-09-24: Dev baza — Supabase bulutida (faqat soxta ma'lumot), lokal Docker yo'q.
 - 2026-09-24: Web kirish — email + parol + TOTP 2FA; telefon (Telegram Gateway) xodimlar uchun keyin.

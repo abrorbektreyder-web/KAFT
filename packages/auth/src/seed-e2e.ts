@@ -2,7 +2,7 @@
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createDb, schema, withTenant } from '@kaft/db';
-import { createCashAccount, createEmployee, createTenant, createUser, FakeTelegram, recordEvent, runDailyJobs } from '@kaft/core';
+import { createCashAccount, createCounterparty, createEmployee, createTenant, createUser, FakeTelegram, recordEvent, runDailyJobs } from '@kaft/core';
 import { acceptInvite, ConsoleMailer, createAuth, createInvitation } from './index.ts';
 
 const envFile = resolve(import.meta.dirname, '../../../.env.local');
@@ -10,7 +10,7 @@ if (!process.env.DATABASE_URL && existsSync(envFile)) process.loadEnvFile(envFil
 const { DATABASE_URL, BETTER_AUTH_SECRET } = process.env;
 if (!DATABASE_URL || !BETTER_AUTH_SECRET) throw new Error('DATABASE_URL va BETTER_AUTH_SECRET kerak');
 
-export const E2E = { slug: 'e2e-test', email: 'e2e-hr@kaft.test', kassirEmail: 'e2e-kassir@kaft.test', password: 'E2e-test-parol-2026' };
+export const E2E = { slug: 'e2e-test', email: 'e2e-hr@kaft.test', kassirEmail: 'e2e-kassir@kaft.test', savdoEmail: 'e2e-savdo@kaft.test', password: 'E2e-test-parol-2026' };
 
 const { db, sql } = createDb(DATABASE_URL);
 const mailer = new ConsoleMailer({ quiet: true });
@@ -20,16 +20,17 @@ const addDays = (n: number) => new Date(Date.parse(today) + n * 86_400_000).toIS
 
 try {
   await sql`delete from tenants where slug = ${E2E.slug}`;
-  await sql`delete from auth_user where email in (${E2E.email}, ${E2E.kassirEmail})`;
+  await sql`delete from auth_user where email in (${E2E.email}, ${E2E.kassirEmail}, ${E2E.savdoEmail})`;
   const { id: t } = await createTenant(db, { name: 'E2E test', slug: E2E.slug });
-  const { companyId, deptId, hrId, kassirId, egaId } = await withTenant(db, t, async (tx) => {
+  const { companyId, deptId, hrId, kassirId, savdoId, egaId } = await withTenant(db, t, async (tx) => {
     const [c] = await tx.insert(schema.companies).values({ tenantId: t, name: 'E2E kompaniya', nameRu: 'E2E компания' }).returning();
     const [d] = await tx.insert(schema.departments).values({ tenantId: t, companyId: c!.id, name: 'E2E bo‘lim', nameRu: 'E2E отдел' }).returning();
     const hr = await createUser(tx, { fullName: 'Test Kadrchi', email: E2E.email, roles: ['HR menejer'] });
     // Kassir — pul sahifasi (faqat o'z kassasi); ega — faqat kassalarni ochish uchun, logini yo'q
     const kassir = await createUser(tx, { fullName: 'Test Kassir', email: E2E.kassirEmail, roles: ['Kassir'] });
+    const savdo = await createUser(tx, { fullName: 'Test Savdo', email: E2E.savdoEmail, roles: ['Savdo menejeri'] });
     const ega = await createUser(tx, { fullName: 'Test Ega', roles: ['Ega'] });
-    return { companyId: c!.id, deptId: d!.id, hrId: hr.id, kassirId: kassir.id, egaId: ega.id };
+    return { companyId: c!.id, deptId: d!.id, hrId: hr.id, kassirId: kassir.id, savdoId: savdo.id, egaId: ega.id };
   });
   const ctx = { tenantId: t, userId: hrId };
   const ids = [];
@@ -45,7 +46,9 @@ try {
   await createCashAccount(db, ega, { companyId, name: 'E2E kassa', type: 'cash', currency: 'UZS', responsibleUserId: kassirId, openingBalance: 1_000_000_00, openingOn: today });
   await createCashAccount(db, ega, { companyId, name: 'Boshqa kassa', type: 'bank', currency: 'UZS', openingBalance: 5_000_000_00, openingOn: today });
 
-  for (const userId of [hrId, kassirId]) {
+  await createCounterparty(db, ega, { name: 'E2E hamkor', roles: ['customer'], managerUserId: savdoId });
+
+  for (const userId of [hrId, kassirId, savdoId]) {
     await createInvitation(db, { tenantId: t, userId }, { mailer, baseURL: 'http://localhost:3000' });
     const token = mailer.outbox.at(-1)!.text.match(/taklif\/([\w-]+)/)![1]!;
     await acceptInvite(db, auth, { token, password: E2E.password });

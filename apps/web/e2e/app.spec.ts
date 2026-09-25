@@ -3,6 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 
 const USER = { email: "e2e-hr@kaft.test", password: "E2e-test-parol-2026" };
 const KASSIR = { email: "e2e-kassir@kaft.test", password: USER.password };
+const SAVDO = { email: "e2e-savdo@kaft.test", password: USER.password };
 
 async function login(page: Page, user = USER) {
   await page.goto("/kirish");
@@ -114,6 +115,8 @@ test("pul: kassir faqat o‘z kassasini ko‘radi, kirim kiritadi — qoldiq osh
   await page.getByLabel(/^Summa/).fill("250 000");
   await page.getByLabel("Modda").click();
   await page.getByRole("option", { name: "Sotuvdan tushum" }).click();
+  await page.getByLabel("Kontragent").click();
+  await page.getByRole("option", { name: "E2E hamkor" }).click();
   await page.getByLabel("Izoh").fill(note);
   await page.getByRole("button", { name: "Saqlash" }).click();
   await expect(page.getByText("Saqlandi")).toBeVisible();
@@ -121,5 +124,27 @@ test("pul: kassir faqat o‘z kassasini ko‘radi, kirim kiritadi — qoldiq osh
   await expect.poll(balance).toBe(before + 250_000);
   // Kassir bekor qila olmaydi (PRD 8) — tugma yo'q
   await expect(page.getByRole("button", { name: "Bekor qilish" })).toHaveCount(0);
+});
+
+test("kontragent: savdo menejeri qo‘shadi, tahriri egaga tasdiqqa ketadi (CP-01/02)", async ({ page }, info) => {
+  await login(page, SAVDO);
+  await page.goto("/kontragentlar");
+  // Faqat o'z mijozlari ko'rinadi
+  await expect(page.getByRole("link", { name: "E2E hamkor" })).toBeVisible();
+  await page.getByRole("button", { name: "Kontragent qo‘shish" }).click();
+  const name = `E2E Mijoz ${info.project.name}`;
+  await page.getByRole("textbox", { name: "Nomi", exact: true }).fill(name);
+  await page.getByRole("textbox", { name: "Telefon", exact: true }).fill("90 123 45 67");
+  await page.getByRole("button", { name: "Saqlash" }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(name);
+  await expect(page.getByText("+998901234567")).toBeVisible();
+
+  await page.getByRole("button", { name: "Tahrirlash" }).click();
+  await page.getByLabel("To‘lov muddati (kun)").fill("15");
+  await page.getByRole("button", { name: "Saqlash" }).click();
+  await expect(page.getByText("O‘zgarish egaga tasdiqqa yuborildi")).toBeVisible();
+  await expect(page.getByText("Tasdiq kutilmoqda")).toBeVisible();
+  // Karta hali o'zgarmagan, tasdiqlash tugmasi savdo menejerida yo'q
+  await expect(page.getByRole("main").getByRole("button", { name: "Tasdiqlash" })).toHaveCount(0);
 });
 

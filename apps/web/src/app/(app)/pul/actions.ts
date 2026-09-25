@@ -1,14 +1,14 @@
 "use server";
 // Pul sahifasi amallari. Ruxsat va qoidalar core'da tekshiriladi; bu yerda — forma maydonlari va xato matni (o'quvchi tilida).
-import { revalidatePath } from "next/cache";
+import { refresh } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import {
   cancelTransaction, createCashAccount, FinError, ForbiddenError, recordTransaction, transfer, type AccountType, type Ctx, type Direction,
 } from "@kaft/core";
 import { db, requireCtx } from "@/lib/server";
 import { parseMoney } from "@/lib/format";
+import type { ActionResult } from "@/components/sheet-form";
 
-export type ActionResult = { ok: true } | { ok: false; error: string } | null;
 
 const str = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
 const opt = (f: FormData, k: string) => str(f, k) || undefined;
@@ -30,7 +30,8 @@ async function run(fn: (ctx: Ctx) => Promise<unknown>): Promise<ActionResult> {
     console.error(e);
     return { ok: false, error: t("err_unknown") };
   }
-  revalidatePath("/pul");
+  // Dinamik sahifalar: joriy sahifani yangi ma'lumot bilan qayta chizish (Next 16)
+  refresh();
   return { ok: true };
 }
 
@@ -38,6 +39,7 @@ export async function addTransaction(_: ActionResult, f: FormData) {
   return run((ctx) => recordTransaction(db, ctx, {
     accountId: str(f, "accountId"), direction: str(f, "direction") as Direction, amount: amount(f, "amount"), categoryId: str(f, "categoryId"),
     occurredOn: str(f, "occurredOn"), rate: rate(f), basis: opt(f, "basis"), note: opt(f, "note"),
+    counterpartyId: str(f, "counterpartyId") && str(f, "counterpartyId") !== "none" ? str(f, "counterpartyId") : undefined,
   }));
 }
 

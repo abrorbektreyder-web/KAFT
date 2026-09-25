@@ -58,7 +58,35 @@ export async function deliverTelegram(db: Db, telegram: TelegramPort, tenantIds?
   return sent;
 }
 
+const dmy = (iso: string) => `${iso.slice(8, 10)}.${iso.slice(5, 7)}.${iso.slice(0, 4)}`;
+type P = Record<string, string>;
+
+// CORE-08: kadr eslatmalaridan tashqari turlar matni (uz/ru). Nomlar — foydalanuvchi ma'lumoti, tarjima qilinmaydi.
+const MESSAGES: Record<string, Record<'uz' | 'ru', { title: string; body: (p: P) => string }>> = {
+  cp_contract_end: {
+    uz: { title: 'Kontragent shartnomasi', body: (p) => `${p.name} — shartnoma №${p.number} muddati ${dmy(p.date!)} da tugaydi` },
+    ru: { title: 'Договор с контрагентом', body: (p) => `${p.name} — срок договора №${p.number} истекает ${dmy(p.date!)}` },
+  },
+  change_request: {
+    uz: { title: 'Tasdiq so‘rovi', body: (p) => `${p.requester} «${p.name}» ma’lumotlarini o‘zgartirishni so‘radi` },
+    ru: { title: 'Запрос на изменение', body: (p) => `${p.requester} просит изменить данные «${p.name}»` },
+  },
+  change_decided: {
+    uz: { title: 'So‘rov ko‘rib chiqildi', body: (p) => (p.decision === 'approved' ? `«${p.name}» o‘zgarishi tasdiqlandi` : `«${p.name}» o‘zgarishi rad etildi: ${p.reason}`) },
+    ru: { title: 'Запрос рассмотрен', body: (p) => (p.decision === 'approved' ? `Изменение «${p.name}» одобрено` : `Изменение «${p.name}» отклонено: ${p.reason}`) },
+  },
+};
+
+/** Bildirishnoma sarlavhasi va matni tanlangan tilda (MESSAGES turlari uchun). */
+export function messageText(kind: string, params: P, locale: string) {
+  const m = MESSAGES[kind]![locale === 'ru' ? 'ru' : 'uz'];
+  return { title: m.title, body: m.body(params) };
+}
+
 /** Bildirishnoma matni o'quvchi tilida (ma'lum tur + qiymatlar bo'lsa), aks holda saqlangan nusxa. */
 export function localize(n: { kind: string; params: unknown; title: string; body: string }, locale: string) {
-  return isReminderKind(n.kind) && n.params ? reminderText(n.kind, n.params as ReminderParams, locale) : { title: n.title, body: n.body };
+  if (!n.params) return { title: n.title, body: n.body };
+  if (isReminderKind(n.kind)) return reminderText(n.kind, n.params as ReminderParams, locale);
+  if (n.kind in MESSAGES) return messageText(n.kind, n.params as P, locale);
+  return { title: n.title, body: n.body };
 }

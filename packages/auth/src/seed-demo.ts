@@ -7,6 +7,7 @@ import { createDb, schema, withTenant } from '@kaft/db';
 import { createEmployee, createTenant, createUser, FakeTelegram, recordEvent, runDailyJobs } from '@kaft/core';
 import { acceptInvite, ConsoleMailer, createAuth, createInvitation } from './index.ts';
 import { seedDemoMoney } from './demo-money.ts';
+import { seedDemoCounterparties } from './demo-counterparties.ts';
 
 const envFile = resolve(import.meta.dirname, '../../../.env.local');
 if (!process.env.DATABASE_URL && existsSync(envFile)) process.loadEnvFile(envFile);
@@ -70,6 +71,8 @@ try {
   await recordEvent(db, ctx, ids[11]!, { type: 'business_trip', startsOn: today, endsOn: addDays(2), basis: 'Buyruq №15' });
   await recordEvent(db, ctx, ids[16]!, { type: 'vacation', startsOn: today, endsOn: addDays(6), basis: 'Buyruq №16' });
 
+  // Kontragentlar va shartnomalar (R1)
+  await seedDemoCounterparties(db, ctx, { today });
   // Pul: kassalar, 3 haftalik kirim/chiqim, inkassatsiya va ayirboshlash (R1)
   await seedDemoMoney(db, ctx, { companyIds: [companies[0]!.id, companies[1]!.id], today });
 

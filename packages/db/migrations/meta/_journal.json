@@ -155,6 +155,20 @@
       "when": 1790362283665,
       "tag": "0021_company_name_ru",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1790366456401,
+      "tag": "0022_counterparties",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1790366458949,
+      "tag": "0023_counterparties_rls",
+      "breakpoints": true
     }
   ]
 }

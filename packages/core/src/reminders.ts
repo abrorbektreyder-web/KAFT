@@ -1,6 +1,6 @@
 // HR-07: muddat eslatmalari va kunlik ish (worker har kuni 08:00 da chaqiradi).
 import { and, eq, inArray, isNull, schema, withTenant, type Db } from '@kaft/db';
-import { notify } from './notifications.ts';
+import { messageText, notify } from './notifications.ts';
 import type { TelegramPort } from './telegram.ts';
 import { deliverTelegram } from './notifications.ts';
 
@@ -67,6 +67,9 @@ export function dueReminders(employees: ReminderEmployee[], on: string) {
 
 // Eslatmalar kimga boradi — kadrlar bilan ishlaydiganlar
 export const REMINDER_ROLES = ['Ega', 'HR menejer'];
+// Kontragent shartnomasi (CP-08): 30 kun oldin — ega, buxgalter va kontragentning mas'ul menejeri
+export const CONTRACT_REMINDER_ROLES = ['Ega', 'Buxgalter'];
+export const CONTRACT_REMINDER_LEAD = 30;
 
 /**
  * Kunlik ish (tizim amali): har tenantda eslatmalar → bildirishnomalar, kelajak sanali
@@ -91,6 +94,26 @@ export async function runDailyJobs(db: Db, opts: { telegram: TelegramPort; on: s
         for (const r of due) {
           const created = await notify(tx, [...new Set(recipients)], {
             kind: r.kind, title: r.title, body: r.text, params: r.params, link: `/kadrlar/${r.employeeId}`, dedupeKey: `${r.kind}:${r.employeeId}:${r.dueOn}`,
+          });
+          reminders += created.length;
+        }
+      }
+
+      const ending = await tx.select({
+        id: schema.contracts.id, number: schema.contracts.number, endsOn: schema.contracts.endsOn,
+        counterpartyId: schema.counterparties.id, name: schema.counterparties.name, managerUserId: schema.counterparties.managerUserId,
+      }).from(schema.contracts).innerJoin(schema.counterparties, eq(schema.counterparties.id, schema.contracts.counterpartyId))
+        .where(eq(schema.contracts.endsOn, addDays(opts.on, CONTRACT_REMINDER_LEAD)));
+      if (ending.length) {
+        const base = (await tx.select({ id: schema.users.id }).from(schema.users)
+          .innerJoin(schema.userRoles, eq(schema.userRoles.userId, schema.users.id))
+          .innerJoin(schema.roles, eq(schema.roles.id, schema.userRoles.roleId))
+          .where(and(inArray(schema.roles.name, CONTRACT_REMINDER_ROLES), eq(schema.users.isBlocked, false)))).map((r) => r.id);
+        for (const c of ending) {
+          const params = { name: c.name, number: c.number, date: c.endsOn! };
+          const created = await notify(tx, [...new Set([...base, ...(c.managerUserId ? [c.managerUserId] : [])])], {
+            kind: 'cp_contract_end', ...messageText('cp_contract_end', params, 'uz'), params,
+            link: `/kontragentlar/${c.counterpartyId}`, dedupeKey: `cp_contract_end:${c.id}:${c.endsOn}`,
           });
           reminders += created.length;
         }
