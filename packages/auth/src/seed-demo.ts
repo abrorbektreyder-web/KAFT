@@ -6,6 +6,7 @@ import { resolve } from 'node:path';
 import { createDb, schema, withTenant } from '@kaft/db';
 import { createEmployee, createTenant, createUser, FakeTelegram, recordEvent, runDailyJobs } from '@kaft/core';
 import { acceptInvite, ConsoleMailer, createAuth, createInvitation } from './index.ts';
+import { seedDemoMoney } from './demo-money.ts';
 
 const envFile = resolve(import.meta.dirname, '../../../.env.local');
 if (!process.env.DATABASE_URL && existsSync(envFile)) process.loadEnvFile(envFile);
@@ -34,7 +35,7 @@ try {
   const tenant = await createTenant(db, { name: 'Demo holding', slug: SLUG, brandName: 'Demo holding' });
   const t = tenant.id;
   const { companies, depts, ownerId, hrId } = await withTenant(db, t, async (tx) => {
-    const companies = await tx.insert(schema.companies).values([{ tenantId: t, name: 'Savdo Markaz' }, { tenantId: t, name: 'Distribyutor Plus' }]).returning();
+    const companies = await tx.insert(schema.companies).values([{ tenantId: t, name: 'Savdo Markaz', nameRu: 'Торговый центр' }, { tenantId: t, name: 'Distribyutor Plus', nameRu: 'Дистрибьютор Плюс' }]).returning();
     const depts = await tx.insert(schema.departments).values([
       { tenantId: t, companyId: companies[0]!.id, name: 'Chakana savdo', nameRu: 'Розничная торговля' },
       { tenantId: t, companyId: companies[0]!.id, name: 'Kassa', nameRu: 'Касса' },
@@ -68,6 +69,9 @@ try {
   await recordEvent(db, ctx, ids[7]!, { type: 'maternity', startsOn: addDays(-40), basis: 'Buyruq №3' });
   await recordEvent(db, ctx, ids[11]!, { type: 'business_trip', startsOn: today, endsOn: addDays(2), basis: 'Buyruq №15' });
   await recordEvent(db, ctx, ids[16]!, { type: 'vacation', startsOn: today, endsOn: addDays(6), basis: 'Buyruq №16' });
+
+  // Pul: kassalar, 3 haftalik kirim/chiqim, inkassatsiya va ayirboshlash (R1)
+  await seedDemoMoney(db, ctx, { companyIds: [companies[0]!.id, companies[1]!.id], today });
 
   // Loginlar: taklif → parol (ega va HR)
   const logins: [string, string, string][] = [];

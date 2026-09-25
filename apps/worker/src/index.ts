@@ -1,4 +1,4 @@
-// Fon ishlari: kunlik eslatmalar (08:00, Toshkent), Telegram bot (TG-01/04).
+// Fon ishlari: kunlik eslatmalar va Markaziy bank kurslari (08:00, Toshkent), Telegram bot (TG-01/04).
 //   node src/index.ts          — doimiy ishlaydi
 //   node src/index.ts --once   — kunlik ishni bir marta bajarib chiqadi (tekshirish uchun)
 import { existsSync } from 'node:fs';
@@ -6,7 +6,7 @@ import { resolve } from 'node:path';
 import { Bot } from 'grammy';
 import { PgBoss } from 'pg-boss';
 import { createDb } from '@kaft/db';
-import { handleBotMessage, runDailyJobs, type TelegramPort } from '@kaft/core';
+import { handleBotMessage, loadCbuRates, runDailyJobs, type TelegramPort } from '@kaft/core';
 
 const envFile = resolve(import.meta.dirname, '../../../.env.local');
 if (!process.env.DATABASE_URL && existsSync(envFile)) process.loadEnvFile(envFile);
@@ -25,6 +25,12 @@ const telegram: TelegramPort = bot
 
 async function daily() {
   const on = todayInTashkent();
+  // Kurs yuklanmasa ham eslatmalar ketadi; ertasi kuni qayta urinadi, qoldiq oxirgi kurs bilan hisoblanadi
+  try {
+    console.log(`Markaziy bank kurslari ${on}: yangi ${await loadCbuRates(db, { on })}`);
+  } catch (e) {
+    console.error('Kurs yuklanmadi:', e);
+  }
   const res = await runDailyJobs(db, { telegram, on });
   console.log(`Kunlik ish ${on}: eslatmalar ${res.reminders}, Telegram'ga yuborildi ${res.sent}`);
 }

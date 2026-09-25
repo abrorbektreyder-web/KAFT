@@ -2,11 +2,12 @@
 import { expect, test, type Page } from "@playwright/test";
 
 const USER = { email: "e2e-hr@kaft.test", password: "E2e-test-parol-2026" };
+const KASSIR = { email: "e2e-kassir@kaft.test", password: USER.password };
 
-async function login(page: Page) {
+async function login(page: Page, user = USER) {
   await page.goto("/kirish");
-  await page.getByLabel("Email").fill(USER.email);
-  await page.getByLabel("Parol", { exact: true }).fill(USER.password);
+  await page.getByLabel("Email").fill(user.email);
+  await page.getByLabel("Parol", { exact: true }).fill(user.password);
   await page.getByRole("button", { name: "Kirish" }).click();
   await expect(page.getByRole("heading", { level: 1 })).toContainText("Test");
 }
@@ -68,6 +69,8 @@ test("til: rus tiliga o‘tadi va qayta yuklanganda saqlanadi (CORE-08)", async 
   // Tizim eslatmasi ham rus tilida (ism esa kiritilganicha)
   // Bo‘limning ruscha nomi (xodim ismi o‘zgarmaydi)
   await expect(page.getByText("E2E отдел").first()).toBeVisible();
+  // Kompaniyaning ruscha nomi
+  await expect(page.getByText("E2E компания").first()).toBeVisible();
   await expect(page.getByText("Rahimova Dilnoza — сегодня день рождения").first()).toBeVisible();
   await page.reload();
   await expect(page.getByText("Кто где")).toBeVisible();
@@ -95,3 +98,28 @@ test("telefon o‘lchamida gorizontal aylantirish yo‘q", async ({ page }) => {
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   expect(overflow).toBeLessThanOrEqual(0);
 });
+
+test("pul: kassir faqat o‘z kassasini ko‘radi, kirim kiritadi — qoldiq oshadi (FIN-01/02)", async ({ page }, info) => {
+  await login(page, KASSIR);
+  await page.goto("/pul");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Pul");
+  const row = page.getByRole("row", { name: /E2E kassa/ });
+  await expect(row).toBeVisible();
+  await expect(page.getByText("Boshqa kassa")).toHaveCount(0);
+  const balance = async () => Number((await row.locator("td").nth(2).innerText()).replace(/\D/g, ""));
+  const before = await balance();
+
+  const note = `E2E kirim ${info.project.name}`;
+  await page.getByRole("button", { name: "Kirim", exact: true }).click();
+  await page.getByLabel(/^Summa/).fill("250 000");
+  await page.getByLabel("Modda").click();
+  await page.getByRole("option", { name: "Sotuvdan tushum" }).click();
+  await page.getByLabel("Izoh").fill(note);
+  await page.getByRole("button", { name: "Saqlash" }).click();
+  await expect(page.getByText("Saqlandi")).toBeVisible();
+  await expect(page.getByText(note)).toBeVisible();
+  await expect.poll(balance).toBe(before + 250_000);
+  // Kassir bekor qila olmaydi (PRD 8) — tugma yo'q
+  await expect(page.getByRole("button", { name: "Bekor qilish" })).toHaveCount(0);
+});
+

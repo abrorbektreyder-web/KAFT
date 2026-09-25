@@ -1,7 +1,7 @@
 // Yadro sxemasi (PRD 9.1–9.2). Har jadvalda tenant_id; ajratish RLS bilan (migrations/*_rls.sql).
 import { sql } from 'drizzle-orm';
 import {
-  bigint, boolean, char, date, foreignKey, index, integer, jsonb, pgTable, primaryKey, text, timestamp, unique, uuid,
+  bigint, boolean, char, check, date, foreignKey, index, integer, jsonb, numeric, pgTable, primaryKey, text, timestamp, unique, uuid,
 } from 'drizzle-orm/pg-core';
 import { authUser } from './auth-schema.ts';
 
@@ -37,6 +37,8 @@ export const companies = pgTable('companies', {
   id: id(),
   tenantId: tenantId(),
   name: text('name').notNull(),
+  /** Rus tilidagi nomi (ixtiyoriy, CORE-08) */
+  nameRu: text('name_ru'),
   stir: text('stir'),
   baseCurrency: char('base_currency', { length: 3 }).notNull().default('UZS'),
   createdAt: createdAt(),
@@ -296,3 +298,91 @@ export const telegramLinkCodes = pgTable('telegram_link_codes', {
   foreignKey({ columns: [t.tenantId, t.userId], foreignColumns: [users.tenantId, users.id] }).onDelete('cascade'),
   index('telegram_link_codes_hash_idx').on(t.codeHash),
 ]);
+
+// ---------------------------------------------------------------- Pul (FIN, R1)
+
+// FIN-01: kassalar va hisoblar. Valyuta keyin o'zgarmaydi — operatsiyalar (tenant_id, id, currency) ga bog'langan.
+export const cashAccounts = pgTable('cash_accounts', {
+  id: id(),
+  tenantId: tenantId(),
+  companyId: uuid('company_id').notNull(),
+  name: text('name').notNull(),
+  // cash | bank | card | payment (Payme, Click …)
+  type: text('type').notNull(),
+  currency: char('currency', { length: 3 }).notNull(),
+  /** Mas'ul (kassir) — «faqat o'ziniki» qamrovi shu bo'yicha */
+  responsibleUserId: uuid('responsible_user_id'),
+  isArchived: boolean('is_archived').notNull().default(false),
+  createdAt: createdAt(),
+}, (t) => [
+  unique('cash_accounts_tenant_id_id_key').on(t.tenantId, t.id),
+  unique('cash_accounts_tenant_id_id_currency_key').on(t.tenantId, t.id, t.currency),
+  foreignKey({ columns: [t.tenantId, t.companyId], foreignColumns: [companies.tenantId, companies.id] }).onDelete('cascade'),
+  foreignKey({ columns: [t.tenantId, t.responsibleUserId], foreignColumns: [users.tenantId, users.id] }),
+  check('cash_accounts_type_check', sql`${t.type} in ('cash', 'bank', 'card', 'payment')`),
+]);
+
+// Kirim/chiqim moddalari (xarajat turi). Byudjet va limit — R2 (FIN-09).
+export const expenseCategories = pgTable('expense_categories', {
+  id: id(),
+  tenantId: tenantId(),
+  name: text('name').notNull(),
+  nameRu: text('name_ru'),
+  // in | out
+  direction: text('direction').notNull(),
+  isArchived: boolean('is_archived').notNull().default(false),
+  createdAt: createdAt(),
+}, (t) => [
+  unique('expense_categories_tenant_id_id_key').on(t.tenantId, t.id),
+  unique('expense_categories_name_key').on(t.tenantId, t.direction, t.name),
+  check('expense_categories_direction_check', sql`${t.direction} in ('in', 'out')`),
+]);
+
+// FIN-02: kirim va chiqim; o'tkazma/ayirboshlash — transfer_id bilan bog'langan ikki yozuv.
+// O'chirilmaydi, o'zgartirilmaydi — faqat sababi bilan bekor qilinadi (CORE-07, migrations/*_finance_guard.sql).
+export const cashTransactions = pgTable('cash_transactions', {
+  id: id(),
+  tenantId: tenantId(),
+  accountId: uuid('account_id').notNull(),
+  // opening | income | expense | transfer
+  kind: text('kind').notNull(),
+  // in | out
+  direction: text('direction').notNull(),
+  /** Tiyin/sentda, har doim musbat (PRD 9.1) */
+  amount: bigint('amount', { mode: 'number' }).notNull(),
+  currency: char('currency', { length: 3 }).notNull(),
+  /** Operatsiya kursi: 1 birlik = N so'm. Standart — Markaziy bank, qo'lda o'zgartirish mumkin (FIN-03) */
+  rate: numeric('rate', { precision: 20, scale: 6 }),
+  categoryId: uuid('category_id'),
+  /** Kontragent (8-hafta: counterparties bilan bog'lanadi) */
+  counterpartyId: uuid('counterparty_id'),
+  transferId: uuid('transfer_id'),
+  occurredOn: date('occurred_on').notNull(),
+  /** Asos hujjat: chek, to'lov topshiriqnomasi, shartnoma */
+  basis: text('basis'),
+  note: text('note'),
+  createdBy: uuid('created_by'),
+  createdAt: createdAt(),
+  cancelledAt: timestamp('cancelled_at', { withTimezone: true }),
+  cancelReason: text('cancel_reason'),
+  cancelledBy: uuid('cancelled_by'),
+}, (t) => [
+  foreignKey({ columns: [t.tenantId, t.accountId, t.currency], foreignColumns: [cashAccounts.tenantId, cashAccounts.id, cashAccounts.currency] }).onDelete('cascade'),
+  foreignKey({ columns: [t.tenantId, t.categoryId], foreignColumns: [expenseCategories.tenantId, expenseCategories.id] }),
+  check('cash_transactions_amount_check', sql`${t.amount} > 0`),
+  check('cash_transactions_direction_check', sql`${t.direction} in ('in', 'out')`),
+  check('cash_transactions_kind_check', sql`${t.kind} in ('opening', 'income', 'expense', 'transfer')`),
+  index('cash_transactions_account_idx').on(t.tenantId, t.accountId, t.occurredOn),
+  index('cash_transactions_transfer_idx').on(t.transferId),
+]);
+
+// FIN-03: Markaziy bank kurslari — hamma mijozlar uchun umumiy ma'lumot (tenant_id yo'q), faqat tizim yozadi.
+export const exchangeRates = pgTable('exchange_rates', {
+  rateDate: date('rate_date').notNull(),
+  currency: char('currency', { length: 3 }).notNull(),
+  /** 1 birlik = N so'm */
+  rate: numeric('rate', { precision: 20, scale: 6 }).notNull(),
+  source: text('source').notNull().default('cbu'),
+  createdAt: createdAt(),
+}, (t) => [primaryKey({ columns: [t.rateDate, t.currency] })]);
+

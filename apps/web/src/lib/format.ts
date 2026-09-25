@@ -35,3 +35,26 @@ export function timeAgo(date: Date, t: (key: "timeNow" | "minutesAgo" | "hoursAg
   if (h < 24) return t("hoursAgo", { n: h });
   return dmy(new Date(date.getTime() + 5 * 3_600_000).toISOString().slice(0, 10));
 }
+
+const CURRENCY_SIGN: Record<string, { uz: string; ru: string }> = {
+  UZS: { uz: "so‘m", ru: "сум" }, USD: { uz: "$", ru: "$" }, EUR: { uz: "€", ru: "€" }, RUB: { uz: "₽", ru: "₽" },
+};
+
+/** Tiyin/sent → «1 250 000 so‘m», «1 000,50 $»; kasr qismi bo'lsa ko'rsatiladi */
+export function money(minor: number, currency: string, locale: string) {
+  const neg = minor < 0;
+  const abs = Math.abs(minor);
+  const major = Math.floor(abs / 100);
+  const cents = abs % 100;
+  const sign = CURRENCY_SIGN[currency]?.[locale === "ru" ? "ru" : "uz"] ?? currency;
+  return `${neg ? "−" : ""}${num(major)}${cents ? `,${String(cents).padStart(2, "0")}` : ""} ${sign}`;
+}
+
+/** Foydalanuvchi kiritgan summa («1 250 000,50», «1250000.5») → tiyin/sent; noto'g'ri bo'lsa null */
+export function parseMoney(input: string): number | null {
+  const s = input.replace(/[\s  ]/g, "").replace(",", ".");
+  if (!/^\d+(\.\d{1,2})?$/.test(s)) return null;
+  const [int, frac = ""] = s.split(".");
+  const n = Number(int) * 100 + Number(frac.padEnd(2, "0"));
+  return Number.isSafeInteger(n) && n > 0 ? n : null;
+}

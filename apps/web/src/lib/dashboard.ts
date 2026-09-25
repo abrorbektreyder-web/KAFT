@@ -11,14 +11,15 @@ export async function loadShell(ctx: Ctx, locale: string) {
     const roles = await tx.select({ name: schema.roles.name }).from(schema.userRoles)
       .innerJoin(schema.roles, eq(schema.roles.id, schema.userRoles.roleId)).where(eq(schema.userRoles.userId, ctx.userId));
     const [tenant] = await tx.select({ name: schema.tenants.name, brandName: schema.tenants.brandName }).from(schema.tenants);
-    const companies = await tx.select({ id: schema.companies.id, name: schema.companies.name }).from(schema.companies).orderBy(schema.companies.name);
+    const companies = await tx.select({ id: schema.companies.id, name: schema.companies.name, nameRu: schema.companies.nameRu }).from(schema.companies);
     const notifications = await tx.select().from(schema.notifications)
       .where(eq(schema.notifications.userId, ctx.userId)).orderBy(desc(schema.notifications.createdAt)).limit(8);
     const unread = await tx.$count(schema.notifications, and(eq(schema.notifications.userId, ctx.userId), isNull(schema.notifications.readAt)));
     return {
       user: { name: user?.fullName ?? "", role: roles.map((r) => r.name).join(", ") },
       brand: tenant?.brandName ?? tenant?.name ?? "Kaft",
-      companies,
+      // Kompaniya nomi o'quvchi tilida, alifbo bo'yicha
+      companies: companies.map((c) => ({ id: c.id, name: localName(c, locale) })).sort((a, b) => a.name.localeCompare(b.name, locale)),
       notifications: notifications.map((n) => ({ id: n.id, kind: n.kind, ...localize(n, locale), link: n.link, createdAt: n.createdAt, read: !!n.readAt })),
       unread,
     };

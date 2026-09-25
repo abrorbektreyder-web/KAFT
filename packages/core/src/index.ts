@@ -12,3 +12,4 @@ export * from './notifications.ts';
 export * from './reminders.ts';
 export * from './telegram-link.ts';
 export * from './search.ts';
+export * from './finance.ts';

@@ -134,6 +134,27 @@
       "when": 1790353499691,
       "tag": "0018_dept_position_name_ru",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1790357004872,
+      "tag": "0019_finance",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1790357008007,
+      "tag": "0020_finance_guard",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1790362283665,
+      "tag": "0021_company_name_ru",
+      "breakpoints": true
     }
   ]
 }

@@ -4,11 +4,11 @@ Manba: `docs/prd-tz-v1.0.pdf`. Talab ID'lari PRD bilan bir xil.
 
 Belgilar: `[x]` bajarildi · `[~]` jarayonda · `[ ]` boshlanmagan
 
-**Hozir:** R0 · 6-hafta yakunlandi (branch `r0/hafta-6-til-mavzu-e2e`): uz/ru, tungi/kunduzgi mavzu, e2e. R0 dan qolgani — asoschi mijozga ishga tushirish (server kerak). Keyingisi — R1 (pul va kontragentlar). Kutilmoqda: Telegram bot tokeni, Telegram Gateway tokeni, server provayderi.
+**Hozir:** R1 · 7-hafta boshlandi (branch `r1/hafta-7-kassalar`). R0 (1–6 hafta) yakunlandi; undan qolgani — asoschi mijozga ishga tushirish (server tanlanganda). Kutilmoqda: Telegram bot tokeni, Telegram Gateway tokeni, server provayderi, ko'p valyutali qarz qoidasi (9-haftagacha).
 
 ---
 
-## R0 — Yadro va kadrlar (1–6 hafta)
+## R0 — Yadro va kadrlar (1–6 hafta) ✅ yakunlandi
 
 ### 1-hafta: poydevor
 - [x] Monorepo (pnpm): `packages/db`, `packages/core`, `apps/web` (Next.js 16), `apps/worker`
@@ -59,10 +59,10 @@ Belgilar: `[x]` bajarildi · `[~]` jarayonda · `[ ]` boshlanmagan
 - [x] 6: Bosh sahifa v1 — haqiqiy: «Kim qayerda», bugun yo'qlar, kadr ogohlantirishlari, eslatmalar; qolgan bloklar R1/R2 belgisi bilan (soxta raqamsiz)
 - [x] 6: Global qidiruv (CORE-09) — xodim va hujjatlar
 - [x] 6: Demo ma'lumot — `pnpm seed:demo` (2 kompaniya, 40 xodim, hodisalar, ega va HR loginlari)
-- [x] 6: O'zbek va rus interfeysi (CORE-08) — next-intl, tanlov cookie'da va profilda saqlanadi; eslatma/Telegram matnlari o'quvchi tilida; bo'lim/lavozimga ixtiyoriy ruscha nom (import ustuni)
+- [x] 6: O'zbek va rus interfeysi (CORE-08) — next-intl, tanlov cookie'da va profilda saqlanadi; eslatma/Telegram matnlari o'quvchi tilida; kompaniya, bo'lim va lavozimga ixtiyoriy ruscha nom (import ustuni — bo'lim/lavozim)
 - [x] 6: Tungi va kunduzgi mavzu — tanlov saqlanadi, birinchi ochilishda tizim sozlamasi
 - [x] 6: e2e testlar (Playwright) — 8 ta oqim × kompyuter va telefon = 16/16; CI'ga qo'shildi
-- [ ] 6: Asoschi mijozga ishga tushirish — server kerak (PRD ochiq savol #1)
+- [ ] 6: Asoschi mijozga ishga tushirish — server kerak (PRD ochiq savol #1); server tanlanganda R1 davomida
 
 ### R0 talablari
 - [ ] CORE-01 Tenant ro'yxatdan o'tishi va sozlash ustasi
@@ -92,9 +92,26 @@ Belgilar: `[x]` bajarildi · `[~]` jarayonda · `[ ]` boshlanmagan
 - [x] Bosh sahifa v1 (UI)
 
 ## R1 — Pul va kontragentlar (7–12 hafta)
-- [ ] Ko'p valyutali qarz qoidasi (R1 dan oldin hal qilinadi)
-- [ ] FIN-01…08, FIN-10 · CP-01…05, CP-08, CP-10 · SAL-01/02/05/07 · PUR-01/05
-- [ ] INT-02…04 · CTL-05 · CORE-11/12 · HR-09 · DOC-03/04
+
+Haftalik reja (PRD'da R1 bo'yicha haftalik bo'linish yo'q — 2026-09-25 da kelishilgan):
+7 — kassalar, kirim/chiqim, kurslar, qoldiq · 8 — kontragentlar · 9 — sotuv/xarid va qarzlar · 10 — to'lov kalendari, kassa uzilishi prognozi, kassa yopish, foyda-zarar · 11 — telefon taklifi, shtat jadvali, hujjat eslatmalari/qidiruvi, bosh sahifa pul bloki · 12 — amoCRM/Bitrix24, e2e, barqarorlashtirish
+
+### 7-hafta: kassalar va pul
+- [x] FIN-01 Kassalar va hisoblar: naqd, bank, karta, to'lov tizimi (Payme/Click); valyuta va mas'ul; boshlang'ich qoldiq
+- [x] FIN-02 Kirim va chiqim: summa, valyuta, modda, kompaniya (kassa orqali), asos hujjat; kontragent maydoni (bog'lanish — 8-hafta)
+- [x] Kirim/chiqim moddalari — standart ro'yxat (uz/ru) + o'z moddasi; byudjet va limit — R2 (FIN-09)
+- [x] Kassalararo o'tkazma va valyuta ayirboshlash (PRD'da R2, qoldiq to'g'ri bo'lishi uchun 7-haftaga olindi)
+- [x] FIN-03 / INT-02 Markaziy bank kursi — worker har kuni 08:00 yuklaydi (cbu.uz); operatsiya kursi qo'lda o'zgartiriladi
+- [x] FIN-04 Pul qoldig'i real vaqtda: har kassa, kompaniya va jami — so'mda va $ ekvivalentida; kurs yo'q bo'lsa ogohlantirish
+- [x] Pul hujjatlari o'chirilmaydi/o'zgartirilmaydi — faqat sababi bilan bekor qilinadi (trigger); o'tkazma ikkala tomoni bilan bekor bo'ladi
+- [x] Ruxsatlar PRD 8 bo'yicha: kassir — faqat o'z kassasi, direktor — ko'radi, buxgalter — kiritadi (bekor qila olmaydi), bekor qilish — ega
+- [x] «Pul» sahifasi: jami va kompaniyalar, kassalar jadvali, oxirgi operatsiyalar, kirim/chiqim/o'tkazma/kassa ochish formalari (uz/ru)
+- [x] Demo ma'lumot: 7 kassa, 3 haftalik tushum va xarajatlar, inkassatsiya, dollar sotish
+
+### R1 talablari
+- [ ] Ko'p valyutali qarz qoidasi (9-haftagacha hal qilinadi)
+- [~] FIN-01…08, FIN-10 — 01…04 tayyor (7-hafta) · CP-01…05, CP-08, CP-10 · SAL-01/02/05/07 · PUR-01/05
+- [~] INT-02 tayyor · INT-03/04 · CTL-05 · CORE-11/12 · HR-09 · DOC-03/04
 
 ## R2 — Operatsiya va nazorat (13–18 hafta)
 - [ ] INV-01…05/07 · ATT · PAY · TSK · APR · CTL-01…04 · MGT-03 · TG-02/03
@@ -108,6 +125,9 @@ Belgilar: `[x]` bajarildi · `[~]` jarayonda · `[ ]` boshlanmagan
 ## Qarorlar jurnali
 - 2026-09-24: Stek — Next.js, toza PostgreSQL + Drizzle, Better Auth (Supabase self-host emas).
 - 2026-09-24: Telefon OTP — Telegram Gateway.
+- 2026-09-25: Valyutalar — UZS, USD, EUR, RUB. Summalar tiyin/sentda (bigint), kurs `numeric(20,6)`, hisob BigInt bilan (kasr xatosiz).
+- 2026-09-25: Markaziy bank kurslari (`exchange_rates`) — hamma mijozlarga umumiy ma'lumot, tenant_id yo'q; ilova faqat o'qiydi, worker yozadi.
+- 2026-09-25: Kassir o'tkazmani faqat o'z kassasidan qiladi (masalan, inkassatsiya); qabul qiluvchi kassa ixtiyoriy.
 - 2026-09-24: Bitta kod bazasi, ko'p mijoz; moslashtirish tenant sozlamalari va modul kalitlari orqali.
 - 2026-09-24: Dev baza — Supabase bulutida (faqat soxta ma'lumot), lokal Docker yo'q.
 - 2026-09-24: Web kirish — email + parol + TOTP 2FA; telefon (Telegram Gateway) xodimlar uchun keyin.
