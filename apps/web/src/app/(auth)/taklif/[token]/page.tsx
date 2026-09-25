@@ -1,18 +1,16 @@
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { acceptInvite } from "@kaft/auth";
 import { auth, db } from "@/lib/server";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/password-input";
 
-const ERRORS: Record<string, string> = {
-  qisqa: "Parol kamida 10 belgidan iborat bo‘lsin",
-  "mos-emas": "Parollar bir xil emas",
-  yaroqsiz: "Taklifnoma yaroqsiz yoki muddati o‘tgan",
-};
+const ERROR_KEYS = { qisqa: "errShort", "mos-emas": "errMismatch", yaroqsiz: "errInvalid" } as const;
 
 export default async function InvitePage({ params, searchParams }: PageProps<"/taklif/[token]">) {
+  const t = await getTranslations("auth");
   const { token } = await params;
   const { xato } = await searchParams;
 
@@ -30,27 +28,27 @@ export default async function InvitePage({ params, searchParams }: PageProps<"/t
     redirect(ok ? "/kirish" : `/taklif/${token}?xato=yaroqsiz`);
   }
 
-  const message = typeof xato === "string" ? ERRORS[xato] : undefined;
+  const errorKey = typeof xato === "string" && xato in ERROR_KEYS ? ERROR_KEYS[xato as keyof typeof ERROR_KEYS] : undefined;
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-xl">Jamoaga xush kelibsiz</CardTitle>
-        <CardDescription>Kirish uchun parol o‘rnating</CardDescription>
+        <CardTitle className="text-xl">{t("inviteTitle")}</CardTitle>
+        <CardDescription>{t("inviteDescription")}</CardDescription>
       </CardHeader>
       <CardContent>
         <form action={accept} className="grid gap-4">
           <div className="grid gap-2">
-            <Label htmlFor="password">Yangi parol</Label>
-            <Input id="password" name="password" type="password" autoComplete="new-password" minLength={10} required className="h-11" />
-            <p className="text-xs text-muted-foreground">Kamida 10 belgi</p>
+            <Label htmlFor="password">{t("newPassword")}</Label>
+            <PasswordInput id="password" name="password" autoComplete="new-password" minLength={10} required className="h-11" />
+            <p className="text-xs text-muted-foreground">{t("newPasswordHint")}</p>
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="confirm">Parolni takrorlang</Label>
-            <Input id="confirm" name="confirm" type="password" autoComplete="new-password" required className="h-11" />
+            <Label htmlFor="confirm">{t("repeatPassword")}</Label>
+            <PasswordInput id="confirm" name="confirm" autoComplete="new-password" required className="h-11" />
           </div>
-          {message && <p role="alert" className="text-sm text-bad">{message}</p>}
-          <Button type="submit" className="h-11">Parolni saqlash</Button>
+          {errorKey && <p role="alert" className="text-sm text-bad">{t(errorKey)}</p>}
+          <Button type="submit" className="h-11">{t("savePassword")}</Button>
         </form>
       </CardContent>
     </Card>

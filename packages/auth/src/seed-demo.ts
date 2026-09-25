@@ -36,10 +36,10 @@ try {
   const { companies, depts, ownerId, hrId } = await withTenant(db, t, async (tx) => {
     const companies = await tx.insert(schema.companies).values([{ tenantId: t, name: 'Savdo Markaz' }, { tenantId: t, name: 'Distribyutor Plus' }]).returning();
     const depts = await tx.insert(schema.departments).values([
-      { tenantId: t, companyId: companies[0]!.id, name: 'Chakana savdo' },
-      { tenantId: t, companyId: companies[0]!.id, name: 'Kassa' },
-      { tenantId: t, companyId: companies[1]!.id, name: 'Ulgurji savdo' },
-      { tenantId: t, companyId: companies[1]!.id, name: 'Ombor' },
+      { tenantId: t, companyId: companies[0]!.id, name: 'Chakana savdo', nameRu: 'Розничная торговля' },
+      { tenantId: t, companyId: companies[0]!.id, name: 'Kassa', nameRu: 'Касса' },
+      { tenantId: t, companyId: companies[1]!.id, name: 'Ulgurji savdo', nameRu: 'Оптовая торговля' },
+      { tenantId: t, companyId: companies[1]!.id, name: 'Ombor', nameRu: 'Склад' },
     ]).returning();
     const owner = await createUser(tx, { fullName: 'Abror Egamov', email: OWNER_EMAIL, roles: ['Ega'] });
     const hr = await createUser(tx, { fullName: 'Malika Saidova', email: HR_EMAIL, roles: ['HR menejer'] });

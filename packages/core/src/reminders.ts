@@ -9,32 +9,57 @@ export type ReminderKind = 'birthday' | 'probation_end' | 'contract_end' | 'pass
 /** Necha kun oldin eslatiladi */
 export const REMINDER_LEAD: Record<ReminderKind, number> = { birthday: 0, probation_end: 7, contract_end: 30, passport_expiry: 30 };
 
-const TITLE: Record<ReminderKind, string> = {
-  birthday: 'Tug‘ilgan kun', probation_end: 'Sinov muddati', contract_end: 'Mehnat shartnomasi', passport_expiry: 'Pasport muddati',
+export type Locale = 'uz' | 'ru';
+export type ReminderParams = { name: string; date: string };
+
+const addDays = (iso: string, n: number) => new Date(Date.parse(iso) + n * 86_400_000).toISOString().slice(0, 10);
+const dmy = (iso: string) => `${iso.slice(8, 10)}.${iso.slice(5, 7)}.${iso.slice(0, 4)}`;
+
+// CORE-08: eslatma matnlari uz/ru. Ism — foydalanuvchi ma'lumoti, tarjima qilinmaydi.
+const TEXTS: Record<Locale, Record<ReminderKind, { title: string; body: (p: ReminderParams) => string }>> = {
+  uz: {
+    birthday: { title: 'Tug‘ilgan kun', body: (p) => `${p.name} — bugun tug‘ilgan kuni` },
+    probation_end: { title: 'Sinov muddati', body: (p) => `${p.name} — sinov muddati ${dmy(p.date)} da tugaydi` },
+    contract_end: { title: 'Mehnat shartnomasi', body: (p) => `${p.name} — mehnat shartnomasi muddati ${dmy(p.date)} da tugaydi` },
+    passport_expiry: { title: 'Pasport muddati', body: (p) => `${p.name} — pasport muddati ${dmy(p.date)} da tugaydi` },
+  },
+  ru: {
+    birthday: { title: 'День рождения', body: (p) => `${p.name} — сегодня день рождения` },
+    probation_end: { title: 'Испытательный срок', body: (p) => `${p.name} — испытательный срок заканчивается ${dmy(p.date)}` },
+    contract_end: { title: 'Трудовой договор', body: (p) => `${p.name} — срок трудового договора истекает ${dmy(p.date)}` },
+    passport_expiry: { title: 'Срок паспорта', body: (p) => `${p.name} — срок паспорта истекает ${dmy(p.date)}` },
+  },
 };
+
+export const isReminderKind = (k: string): k is ReminderKind => k in REMINDER_LEAD;
+
+/** Eslatma sarlavhasi va matni tanlangan tilda. */
+export function reminderText(kind: ReminderKind, params: ReminderParams, locale: string) {
+  const t = TEXTS[locale === 'ru' ? 'ru' : 'uz'][kind];
+  return { title: t.title, body: t.body(params) };
+}
 
 export interface ReminderEmployee {
   id: string; lastName: string; firstName: string;
   birthDate: string | null; probationEndsOn: string | null; contractEndsOn: string | null; passportExpiresOn: string | null;
 }
 
-const addDays = (iso: string, n: number) => new Date(Date.parse(iso) + n * 86_400_000).toISOString().slice(0, 10);
-const dmy = (iso: string) => `${iso.slice(8, 10)}.${iso.slice(5, 7)}.${iso.slice(0, 4)}`;
-
 /** Berilgan kunda yuborilishi kerak bo'lgan eslatmalar (sof mantiq). Matnda maxfiy ma'lumot yo'q. */
 export function dueReminders(employees: ReminderEmployee[], on: string) {
-  const out: { kind: ReminderKind; employeeId: string; dueOn: string; title: string; text: string }[] = [];
+  const out: { kind: ReminderKind; employeeId: string; dueOn: string; params: ReminderParams; title: string; text: string }[] = [];
   for (const e of employees) {
     const name = `${e.lastName} ${e.firstName}`;
-    const push = (kind: ReminderKind, dueOn: string, text: string) => out.push({ kind, employeeId: e.id, dueOn, title: TITLE[kind], text });
-    if (e.birthDate && e.birthDate.slice(5) === on.slice(5)) push('birthday', on, `${name} — bugun tug‘ilgan kuni`);
-    const deadlines: [ReminderKind, string | null, string][] = [
-      ['probation_end', e.probationEndsOn, 'sinov muddati'],
-      ['contract_end', e.contractEndsOn, 'mehnat shartnomasi muddati'],
-      ['passport_expiry', e.passportExpiresOn, 'pasport muddati'],
+    const push = (kind: ReminderKind, dueOn: string) => {
+      const params = { name, date: dueOn };
+      const { title, body } = reminderText(kind, params, 'uz');
+      out.push({ kind, employeeId: e.id, dueOn, params, title, text: body });
+    };
+    if (e.birthDate && e.birthDate.slice(5) === on.slice(5)) push('birthday', on);
+    const deadlines: [ReminderKind, string | null][] = [
+      ['probation_end', e.probationEndsOn], ['contract_end', e.contractEndsOn], ['passport_expiry', e.passportExpiresOn],
     ];
-    for (const [kind, date, what] of deadlines) {
-      if (date && addDays(on, REMINDER_LEAD[kind]) === date) push(kind, date, `${name} — ${what} ${dmy(date)} da tugaydi`);
+    for (const [kind, date] of deadlines) {
+      if (date && addDays(on, REMINDER_LEAD[kind]) === date) push(kind, date);
     }
   }
   return out;
@@ -65,7 +90,7 @@ export async function runDailyJobs(db: Db, opts: { telegram: TelegramPort; on: s
           .where(and(inArray(schema.roles.name, REMINDER_ROLES), eq(schema.users.isBlocked, false)))).map((r) => r.id);
         for (const r of due) {
           const created = await notify(tx, [...new Set(recipients)], {
-            kind: r.kind, title: r.title, body: r.text, link: `/kadrlar/${r.employeeId}`, dedupeKey: `${r.kind}:${r.employeeId}:${r.dueOn}`,
+            kind: r.kind, title: r.title, body: r.text, params: r.params, link: `/kadrlar/${r.employeeId}`, dedupeKey: `${r.kind}:${r.employeeId}:${r.dueOn}`,
           });
           reminders += created.length;
         }

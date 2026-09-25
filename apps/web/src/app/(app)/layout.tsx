@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { getLocale } from "next-intl/server";
 import { requireCtx } from "@/lib/server";
 import { loadShell } from "@/lib/dashboard";
 import { AppSidebar } from "@/components/app-sidebar";
@@ -8,7 +9,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const ctx = await requireCtx();
-  const shell = await loadShell(ctx);
+  const shell = await loadShell(ctx, await getLocale());
   return (
     <TooltipProvider>
       <SidebarProvider>

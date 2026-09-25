@@ -3,7 +3,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { and, createDb, eq, schema, withTenant } from '@kaft/db';
 import {
-  createEmployee, createTenant, createUser, dueReminders, FakeTelegram, recordEvent, runDailyJobs, setNotificationPref,
+  createEmployee, createTenant, createUser, dueReminders, FakeTelegram, recordEvent, reminderText, runDailyJobs, setNotificationPref,
 } from '../src/index.ts';
 
 describe('dueReminders (sof mantiq)', () => {
@@ -27,6 +27,20 @@ describe('dueReminders (sof mantiq)', () => {
   it('eslatma matnida maxfiy ma’lumot yo‘q — faqat ism va sana', () => {
     const [r] = dueReminders([{ ...base, passportExpiresOn: '2026-11-30' }], '2026-10-31');
     expect(r!.text).toBe('Karimov Aziz — pasport muddati 30.11.2026 da tugaydi');
+  });
+});
+
+describe('reminderText (uz/ru, CORE-08)', () => {
+  const p = { name: 'Karimov Aziz', date: '2026-11-30' };
+  it('o‘zbekcha', () => {
+    expect(reminderText('passport_expiry', p, 'uz')).toEqual({ title: 'Pasport muddati', body: 'Karimov Aziz — pasport muddati 30.11.2026 da tugaydi' });
+    expect(reminderText('birthday', p, 'uz').body).toBe('Karimov Aziz — bugun tug‘ilgan kuni');
+  });
+  it('ruscha — ism o‘zgarmaydi (foydalanuvchi ma’lumoti)', () => {
+    expect(reminderText('passport_expiry', p, 'ru')).toEqual({ title: 'Срок паспорта', body: 'Karimov Aziz — срок паспорта истекает 30.11.2026' });
+    expect(reminderText('birthday', p, 'ru').body).toBe('Karimov Aziz — сегодня день рождения');
+    expect(reminderText('probation_end', p, 'ru').title).toBe('Испытательный срок');
+    expect(reminderText('contract_end', p, 'ru').title).toBe('Трудовой договор');
   });
 });
 
@@ -75,6 +89,26 @@ describe('kunlik ish: eslatma → bildirishnoma → Telegram', () => {
 
     const inApp = await withTenant(db, tenantId, (tx) => tx.select().from(schema.notifications).where(eq(schema.notifications.kind, 'probation_end')));
     expect(inApp.map((n) => n.userId).sort()).toEqual([hrId, egaId].sort());
+  });
+
+  it('bildirishnomada tur va qiymatlar saqlanadi (matn ko‘rsatishda tilga qarab yig‘iladi)', async () => {
+    const [n] = await withTenant(db, tenantId, (tx) => tx.select().from(schema.notifications)
+      .where(and(eq(schema.notifications.kind, 'probation_end'), eq(schema.notifications.userId, hrId))));
+    expect(n!.params).toEqual({ name: 'Karimov Aziz', date: '2026-10-20' });
+  });
+
+  it('rus tilini tanlagan foydalanuvchiga Telegram ruscha keladi', async () => {
+    const RU_CHAT = HR_CHAT + 1;
+    await withTenant(db, tenantId, async (tx) => {
+      const ru = await createUser(tx, { fullName: 'Olga', roles: ['HR menejer'] });
+      await tx.update(schema.users).set({ telegramId: BigInt(RU_CHAT), locale: 'ru' }).where(eq(schema.users.id, ru.id));
+    });
+    await createEmployee(db, { tenantId, userId: hrId }, { companyId, lastName: 'Rahimov', firstName: 'Sardor', contractEndsOn: '2026-12-20' });
+    const tg = new FakeTelegram();
+    await runDailyJobs(db, { telegram: tg, on: '2026-11-20', tenantIds: [tenantId] });
+    const ruMsg = tg.sent.find((m) => m.chatId === String(RU_CHAT));
+    expect(ruMsg!.text).toContain('Rahimov Sardor — срок трудового договора истекает 20.12.2026');
+    expect(tg.sent.find((m) => m.chatId === String(HR_CHAT))!.text).toContain('Rahimov Sardor — mehnat shartnomasi muddati 20.12.2026 da tugaydi');
   });
 
   it('bir kunda ikki marta ishga tushsa ham xat bir marta keladi', async () => {

@@ -15,3 +15,7 @@ coverage/
 
 # Lokal fayl ombori (dev)
 .storage/
+
+# Playwright
+test-results/
+playwright-report/

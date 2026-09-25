@@ -48,6 +48,8 @@ export const departments = pgTable('departments', {
   companyId: uuid('company_id').notNull(),
   parentId: uuid('parent_id'),
   name: text('name').notNull(),
+  /** Rus tilidagi nomi (ixtiyoriy, CORE-08); bo'lmasa `name` ko'rsatiladi */
+  nameRu: text('name_ru'),
   createdAt: createdAt(),
 }, (t) => [
   unique('departments_tenant_id_id_key').on(t.tenantId, t.id),
@@ -143,6 +145,7 @@ export const positions = pgTable('positions', {
   tenantId: tenantId(),
   companyId: uuid('company_id').notNull(),
   name: text('name').notNull(),
+  nameRu: text('name_ru'),
   createdAt: createdAt(),
 }, (t) => [
   unique('positions_tenant_id_id_key').on(t.tenantId, t.id),
@@ -254,6 +257,8 @@ export const notifications = pgTable('notifications', {
   title: text('title').notNull(),
   body: text('body').notNull(),
   link: text('link'),
+  /** Matn qiymatlari (ism, sana) — matn ko'rsatishda o'quvchi tilida yig'iladi; title/body — o'zbekcha nusxa */
+  params: jsonb('params'),
   dedupeKey: text('dedupe_key').notNull(),
   createdAt: createdAt(),
   readAt: timestamp('read_at', { withTimezone: true }),

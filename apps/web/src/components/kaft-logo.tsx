@@ -1,7 +1,7 @@
 import { Hand } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export function KaftLogo({ className, withTagline = false }: { className?: string; withTagline?: boolean }) {
+export function KaftLogo({ className, tagline }: { className?: string; tagline?: string }) {
   return (
     <div className={cn("flex items-center gap-2.5", className)}>
       <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-sidebar-primary text-white">
@@ -9,7 +9,7 @@ export function KaftLogo({ className, withTagline = false }: { className?: strin
       </span>
       <span className="leading-tight">
         <span className="block text-lg font-bold tracking-tight">Kaft</span>
-        {withTagline && <span className="block text-xs text-sidebar-foreground/70">Kompaniyangiz kaftingizda</span>}
+        {tagline && <span className="block text-xs text-sidebar-foreground/70">{tagline}</span>}
       </span>
     </div>
   );

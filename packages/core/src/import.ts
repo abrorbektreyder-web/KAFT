@@ -6,7 +6,7 @@ import { authorize, deny, type Ctx } from './permissions.ts';
 import { secretError, type EmployeeInput, type Secrets } from './employees.ts';
 
 type Key = 'lastName' | 'firstName' | 'middleName' | 'birthDate' | 'phone' | 'department' | 'position'
-  | 'hiredAt' | 'contractType' | 'passport' | 'jshshir' | 'bankCard';
+  | 'hiredAt' | 'contractType' | 'passport' | 'jshshir' | 'bankCard' | 'departmentRu' | 'positionRu';
 
 export const EMPLOYEE_COLUMNS: { key: Key; title: string; required?: boolean; width: number }[] = [
   { key: 'lastName', title: 'Familiya*', required: true, width: 18 },
@@ -21,6 +21,9 @@ export const EMPLOYEE_COLUMNS: { key: Key; title: string; required?: boolean; wi
   { key: 'passport', title: 'Pasport', width: 13 },
   { key: 'jshshir', title: 'JShShIR', width: 17 },
   { key: 'bankCard', title: 'Bank karta', width: 20 },
+  // Rus tilidagi interfeys uchun (ixtiyoriy, CORE-08)
+  { key: 'departmentRu', title: 'Bo‘lim (ruscha)', width: 22 },
+  { key: 'positionRu', title: 'Lavozim (ruscha)', width: 22 },
 ];
 const SECRET_KEYS = ['passport', 'jshshir', 'bankCard'] as const;
 const DATE_KEYS = ['birthDate', 'hiredAt'] as const;
@@ -41,6 +44,7 @@ export async function buildEmployeeTemplate(): Promise<ExcelJS.Buffer> {
     ['Telefon: 901234567 yoki +998901234567.'],
     ['Pasport: AA1234567 · JShShIR: 14 raqam · Bank karta: 16 raqam.'],
     ['Bo‘lim va lavozim nomi bo‘yicha topiladi; yo‘q bo‘lsa yaratiladi.'],
+    ['«Bo‘lim (ruscha)» va «Lavozim (ruscha)» — rus tilidagi interfeysda ko‘rinadigan nom (ixtiyoriy).'],
   ].forEach((r) => help.addRow(r));
   help.getColumn(1).width = 70;
   return wb.xlsx.writeBuffer();
@@ -77,7 +81,7 @@ function parsePhone(v: string): string | null {
   return null;
 }
 
-type Parsed = Omit<EmployeeInput, 'companyId' | 'secrets'> & { department: string; position: string; secrets: Secrets };
+type Parsed = Omit<EmployeeInput, 'companyId' | 'secrets'> & { department: string; position: string; departmentRu?: string; positionRu?: string; secrets: Secrets };
 
 async function parse(file: Buffer | ArrayBuffer) {
   const wb = new ExcelJS.Workbook();
@@ -145,13 +149,19 @@ async function parse(file: Buffer | ArrayBuffer) {
   return { rows, errors };
 }
 
-async function ensureByName(tx: Tx, table: typeof schema.departments | typeof schema.positions, ctx: Ctx, companyId: string, names: string[]) {
-  const unique = [...new Set(names)];
-  const found = await tx.select({ id: table.id, name: table.name }).from(table)
+async function ensureByName(tx: Tx, table: typeof schema.departments | typeof schema.positions, ctx: Ctx, companyId: string, items: { name: string; nameRu?: string }[]) {
+  const ruOf = new Map<string, string>();
+  for (const i of items) if (i.nameRu && !ruOf.has(i.name)) ruOf.set(i.name, i.nameRu);
+  const unique = [...new Set(items.map((i) => i.name))];
+  const found = await tx.select({ id: table.id, name: table.name, nameRu: table.nameRu }).from(table)
     .where(and(eq(table.companyId, companyId), inArray(table.name, unique)));
+  // Bor yozuvda ruscha nom bo'sh bo'lsa — fayldagisi bilan to'ldiriladi (mavjudini almashtirmaymiz)
+  for (const f of found) {
+    if (!f.nameRu && ruOf.has(f.name)) await tx.update(table).set({ nameRu: ruOf.get(f.name)! }).where(eq(table.id, f.id));
+  }
   const missing = unique.filter((n) => !found.some((f) => f.name === n));
   const created = missing.length
-    ? await tx.insert(table).values(missing.map((name) => ({ tenantId: ctx.tenantId, companyId, name }))).returning({ id: table.id, name: table.name })
+    ? await tx.insert(table).values(missing.map((name) => ({ tenantId: ctx.tenantId, companyId, name, nameRu: ruOf.get(name) }))).returning({ id: table.id, name: table.name })
     : [];
   return new Map([...found, ...created].map((r) => [r.name, r.id]));
 }
@@ -181,9 +191,9 @@ export async function importEmployees(db: Db, ctx: Ctx, file: Buffer | ArrayBuff
   }
 
   await withTenant(db, ctx.tenantId, async (tx) => {
-    const depts = await ensureByName(tx, schema.departments, ctx, opts.companyId, rows.map((r) => r.data.department));
-    const poss = await ensureByName(tx, schema.positions, ctx, opts.companyId, rows.map((r) => r.data.position));
-    const inserted = await tx.insert(schema.employees).values(rows.map(({ data: { department, position, secrets: _s, ...f } }) => ({
+    const depts = await ensureByName(tx, schema.departments, ctx, opts.companyId, rows.map((r) => ({ name: r.data.department, nameRu: r.data.departmentRu })));
+    const poss = await ensureByName(tx, schema.positions, ctx, opts.companyId, rows.map((r) => ({ name: r.data.position, nameRu: r.data.positionRu })));
+    const inserted = await tx.insert(schema.employees).values(rows.map(({ data: { department, position, departmentRu: _dr, positionRu: _pr, secrets: _s, ...f } }) => ({
       ...f, tenantId: ctx.tenantId, companyId: opts.companyId, departmentId: depts.get(department)!, positionId: poss.get(position)!,
     }))).returning({ id: schema.employees.id });
 

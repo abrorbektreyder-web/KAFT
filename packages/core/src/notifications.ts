@@ -1,12 +1,15 @@
 // CORE-10: bildirishnomalar markazi (platformada va Telegram'da, turlari bo'yicha sozlanadi).
 import { and, eq, inArray, isNull, schema, sql, type Db, type Tx } from '@kaft/db';
 import type { TelegramPort } from './telegram.ts';
+import { isReminderKind, reminderText, type ReminderParams } from './reminders.ts';
 
 export interface NewNotification {
   kind: string;
   title: string;
   body: string;
   link?: string;
+  /** Matn qiymatlari — o'quvchi tilida qayta yig'ish uchun */
+  params?: Record<string, unknown>;
   /** Bir xil kalit bilan ikkinchi marta yaratilmaydi */
   dedupeKey: string;
 }
@@ -33,7 +36,10 @@ export async function setNotificationPref(tx: Tx, userId: string, kind: string, 
 /** Tizim ishi (admin ulanish): yuborilmagan Telegram bildirishnomalarini jo'natadi. */
 export async function deliverTelegram(db: Db, telegram: TelegramPort, tenantIds?: string[]) {
   const pending = await db
-    .select({ id: schema.notifications.id, title: schema.notifications.title, body: schema.notifications.body, chatId: schema.users.telegramId })
+    .select({
+      id: schema.notifications.id, kind: schema.notifications.kind, params: schema.notifications.params,
+      title: schema.notifications.title, body: schema.notifications.body, chatId: schema.users.telegramId, locale: schema.users.locale,
+    })
     .from(schema.notifications)
     .innerJoin(schema.users, eq(schema.users.id, schema.notifications.userId))
     .where(and(
@@ -43,9 +49,16 @@ export async function deliverTelegram(db: Db, telegram: TelegramPort, tenantIds?
     ));
   let sent = 0;
   for (const n of pending) {
-    await telegram.send(String(n.chatId), `Kaft · ${n.title}\n${n.body}`);
+    // Qabul qiluvchining tilida (CORE-08)
+    const { title, body } = localize(n, n.locale);
+    await telegram.send(String(n.chatId), `Kaft · ${title}\n${body}`);
     await db.update(schema.notifications).set({ telegramSentAt: new Date() }).where(eq(schema.notifications.id, n.id));
     sent++;
   }
   return sent;
+}
+
+/** Bildirishnoma matni o'quvchi tilida (ma'lum tur + qiymatlar bo'lsa), aks holda saqlangan nusxa. */
+export function localize(n: { kind: string; params: unknown; title: string; body: string }, locale: string) {
+  return isReminderKind(n.kind) && n.params ? reminderText(n.kind, n.params as ReminderParams, locale) : { title: n.title, body: n.body };
 }

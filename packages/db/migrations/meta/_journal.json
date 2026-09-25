@@ -120,6 +120,20 @@
       "when": 1790274259871,
       "tag": "0016_telegram_link_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1790351463262,
+      "tag": "0017_notification_params",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1790353499691,
+      "tag": "0018_dept_position_name_ru",
+      "breakpoints": true
     }
   ]
 }

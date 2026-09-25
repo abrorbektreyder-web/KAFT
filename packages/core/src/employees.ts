@@ -37,6 +37,11 @@ const SECRET_RULES: Record<keyof Secrets, [RegExp, string]> = {
 };
 
 /** Maxfiy maydonni tekshiradi; xato bo'lsa sababini qaytaradi. */
+/** Bo'lim/lavozim nomi o'quvchi tilida: rus tilida ruscha nomi bo'lsa — o'sha, aks holda asl nom (CORE-08). */
+export function localName(x: { name: string; nameRu?: string | null }, locale: string) {
+  return locale === 'ru' && x.nameRu ? x.nameRu : x.name;
+}
+
 export function secretError(field: keyof Secrets, value: string): string | null {
   const [re, msg] = SECRET_RULES[field];
   return re.test(value) ? null : msg;

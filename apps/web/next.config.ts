@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import type { NextConfig } from "next";
+import createNextIntlPlugin from "next-intl/plugin";
 
 // Monorepo ildizidagi .env.local (DATABASE_URL, BETTER_AUTH_SECRET)
 const rootEnv = resolve(import.meta.dirname, "../../.env.local");
@@ -14,4 +15,5 @@ const nextConfig: NextConfig = {
   transpilePackages: ["@kaft/db", "@kaft/core", "@kaft/auth"],
 };
 
-export default nextConfig;
+// CORE-08: uz/ru — til cookie bo'yicha (src/i18n/request.ts)
+export default createNextIntlPlugin("./src/i18n/request.ts")(nextConfig);

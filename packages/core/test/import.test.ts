@@ -3,7 +3,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import ExcelJS from 'exceljs';
 import { createDb, eq, schema, withTenant } from '@kaft/db';
-import { buildEmployeeTemplate, createTenant, createUser, EMPLOYEE_COLUMNS, ForbiddenError, importEmployees } from '../src/index.ts';
+import { buildEmployeeTemplate, createTenant, createUser, EMPLOYEE_COLUMNS, ForbiddenError, importEmployees, localName } from '../src/index.ts';
 
 const { db, sql } = createDb(process.env.DATABASE_URL!);
 let tenantId: string;
@@ -103,4 +103,26 @@ describe('Excel import', () => {
     await expect(importEmployees(db, { tenantId, userId: savdoId }, await fillTemplate([row(900)]), { companyId }))
       .rejects.toBeInstanceOf(ForbiddenError);
   });
+});
+
+describe('ruscha nomlar (CORE-08)', () => {
+  it('rus tilida ruscha nom, bo‘lmasa asl nom', () => {
+    expect(localName({ name: 'Kassa', nameRu: 'Касса' }, 'ru')).toBe('Касса');
+    expect(localName({ name: 'Kassa', nameRu: 'Касса' }, 'uz')).toBe('Kassa');
+    expect(localName({ name: 'Ombor', nameRu: null }, 'ru')).toBe('Ombor');
+  });
+
+  it('importda ruscha bo‘lim/lavozim nomi saqlanadi, bor bo‘limda bo‘sh bo‘lsa to‘ldiriladi', async () => {
+    const fresh = [...row(900), 'Розничная торговля', 'Продавец'];
+    fresh[5] = 'Chakana savdo'; fresh[6] = 'Sotuvchi';
+    const existing = [...row(902), 'Склад', null]; // «Ombor» oldingi testda ruscha nomsiz yaratilgan
+    const res = await importEmployees(db, ctx(), await fillTemplate([fresh, existing]), { companyId });
+    expect(res).toEqual({ ok: true, imported: 2 });
+
+    const depts = await withTenant(db, tenantId, (tx) => tx.select({ name: schema.departments.name, nameRu: schema.departments.nameRu }).from(schema.departments));
+    expect(depts).toContainEqual({ name: 'Chakana savdo', nameRu: 'Розничная торговля' });
+    expect(depts).toContainEqual({ name: 'Ombor', nameRu: 'Склад' });
+    const [pos] = await withTenant(db, tenantId, (tx) => tx.select({ nameRu: schema.positions.nameRu }).from(schema.positions).where(eq(schema.positions.name, 'Sotuvchi')));
+    expect(pos?.nameRu).toBe('Продавец');
+  }, 60_000);
 });

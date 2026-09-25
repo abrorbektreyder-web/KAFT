@@ -4,7 +4,7 @@ Manba: `docs/prd-tz-v1.0.pdf`. Talab ID'lari PRD bilan bir xil.
 
 Belgilar: `[x]` bajarildi · `[~]` jarayonda · `[ ]` boshlanmagan
 
-**Hozir:** R0 · 6-hafta (branch `r0/hafta-6-ui`). UI birinchi qismi tayyor: kirish, 2FA, bosh sahifa v1, qidiruv, demo ma'lumot. Qolgani: uz/ru tillari, e2e testlar. Kutilmoqda: Telegram bot tokeni, Telegram Gateway tokeni.
+**Hozir:** R0 · 6-hafta yakunlandi (branch `r0/hafta-6-til-mavzu-e2e`): uz/ru, tungi/kunduzgi mavzu, e2e. R0 dan qolgani — asoschi mijozga ishga tushirish (server kerak). Keyingisi — R1 (pul va kontragentlar). Kutilmoqda: Telegram bot tokeni, Telegram Gateway tokeni, server provayderi.
 
 ---
 
@@ -59,8 +59,9 @@ Belgilar: `[x]` bajarildi · `[~]` jarayonda · `[ ]` boshlanmagan
 - [x] 6: Bosh sahifa v1 — haqiqiy: «Kim qayerda», bugun yo'qlar, kadr ogohlantirishlari, eslatmalar; qolgan bloklar R1/R2 belgisi bilan (soxta raqamsiz)
 - [x] 6: Global qidiruv (CORE-09) — xodim va hujjatlar
 - [x] 6: Demo ma'lumot — `pnpm seed:demo` (2 kompaniya, 40 xodim, hodisalar, ega va HR loginlari)
-- [ ] 6: O'zbek va rus interfeysi (CORE-08) — next-intl
-- [ ] 6: e2e testlar (Playwright)
+- [x] 6: O'zbek va rus interfeysi (CORE-08) — next-intl, tanlov cookie'da va profilda saqlanadi; eslatma/Telegram matnlari o'quvchi tilida; bo'lim/lavozimga ixtiyoriy ruscha nom (import ustuni)
+- [x] 6: Tungi va kunduzgi mavzu — tanlov saqlanadi, birinchi ochilishda tizim sozlamasi
+- [x] 6: e2e testlar (Playwright) — 8 ta oqim × kompyuter va telefon = 16/16; CI'ga qo'shildi
 - [ ] 6: Asoschi mijozga ishga tushirish — server kerak (PRD ochiq savol #1)
 
 ### R0 talablari
@@ -72,7 +73,7 @@ Belgilar: `[x]` bajarildi · `[~]` jarayonda · `[ ]` boshlanmagan
   - ⚠ Dev'da vaqtincha o'chirilgan (`KAFT_REQUIRE_2FA=false`). **Prod'ga chiqishdan oldin olib tashlash shart** — standart holatda yoqiq
 - [~] CORE-06 Audit jurnali — jadval va himoya tayyor; maxfiy maydonni o'qishni yozish HR moduli bilan (3-hafta)
 - [~] CORE-07 O'chirilmas tarix — audit jurnali va kadr hodisalari himoyalangan; moliya/ombor hujjatlari R1–R2 da
-- [ ] CORE-08 O'zbek va rus interfeysi
+- [x] CORE-08 O'zbek va rus interfeysi
 - [x] CORE-09 Global qidiruv (xodim, hujjat; kontragent/tovar — o'z modullari bilan)
 - [x] CORE-10 Bildirishnomalar markazi (UI — 6-hafta)
 - [x] HR-01 Xodim kartasi (maxfiy maydonlar bilan)
