@@ -30,7 +30,7 @@ export const DEFAULT_CATEGORIES: { name: string; nameRu: string; direction: Dire
 ];
 
 export type FinErrorCode = 'amount' | 'date' | 'currency' | 'cbu' | 'name' | 'accountNotFound' | 'accountType' | 'rate' | 'direction'
-  | 'category' | 'counterparty' | 'archived' | 'categoryDirection' | 'sameAccount' | 'toAmountRequired' | 'amountsMismatch' | 'reason' | 'notFound' | 'alreadyCancelled';
+  | 'category' | 'counterparty' | 'document' | 'archived' | 'categoryDirection' | 'sameAccount' | 'toAmountRequired' | 'amountsMismatch' | 'reason' | 'notFound' | 'alreadyCancelled';
 
 /** Pul moduli xatosi: `code` — interfeysda o'quvchi tilidagi matn uchun, `message` — o'zbekcha nusxa. */
 export class FinError extends Error {
@@ -203,6 +203,9 @@ export interface NewTransaction {
   /** Qo'lda kiritilgan operatsiya kursi (1 birlik = N so'm); berilmasa — Markaziy bank */
   rate?: string;
   counterpartyId?: string;
+  /** Qaysi hujjat uchun to'lov: kirim — sotuv, chiqim — xarid (ixtiyoriy) */
+  saleId?: string;
+  purchaseId?: string;
   basis?: string;
   note?: string;
 }
@@ -232,11 +235,18 @@ export async function recordTransaction(db: Db, ctx: Ctx, input: NewTransaction)
       const [cp] = await tx.select({ id: schema.counterparties.id }).from(schema.counterparties).where(eq(schema.counterparties.id, input.counterpartyId));
       if (!cp) throw new FinError('counterparty', 'Kontragent topilmadi');
     }
+    if (input.saleId || input.purchaseId) {
+      const table = input.saleId ? schema.sales : schema.purchases;
+      const [doc] = await tx.select({ counterpartyId: table.counterpartyId }).from(table).where(eq(table.id, (input.saleId ?? input.purchaseId)!));
+      if (!doc || doc.counterpartyId !== input.counterpartyId || (input.saleId ? input.direction !== 'in' : input.direction !== 'out')) {
+        throw new FinError('document', 'Hujjat bu kontragent yoki operatsiya turiga tegishli emas');
+      }
+    }
 
     const [row] = await tx.insert(schema.cashTransactions).values({
       tenantId: ctx.tenantId, accountId: acc.id, kind: input.direction === 'in' ? 'income' : 'expense', direction: input.direction,
       amount: input.amount, currency: acc.currency, rate: await operationRate(tx, acc.currency, input.occurredOn, input.rate),
-      categoryId: input.categoryId, counterpartyId: input.counterpartyId, occurredOn: input.occurredOn,
+      categoryId: input.categoryId, counterpartyId: input.counterpartyId, saleId: input.saleId, purchaseId: input.purchaseId, occurredOn: input.occurredOn,
       basis: input.basis, note: input.note, createdBy: ctx.userId,
     }).returning({ id: schema.cashTransactions.id });
     await tx.insert(schema.auditLog).values({

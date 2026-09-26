@@ -35,11 +35,19 @@ async function run(fn: (ctx: Ctx) => Promise<unknown>): Promise<ActionResult> {
   return { ok: true };
 }
 
+/** To'lov bog'lanadigan hujjat: kirim — sotuv, chiqim — xarid */
+function docLink(f: FormData) {
+  const id = str(f, "docId");
+  if (!id || id === "none") return {};
+  return str(f, "direction") === "in" ? { saleId: id } : { purchaseId: id };
+}
+
 export async function addTransaction(_: ActionResult, f: FormData) {
   return run((ctx) => recordTransaction(db, ctx, {
     accountId: str(f, "accountId"), direction: str(f, "direction") as Direction, amount: amount(f, "amount"), categoryId: str(f, "categoryId"),
     occurredOn: str(f, "occurredOn"), rate: rate(f), basis: opt(f, "basis"), note: opt(f, "note"),
     counterpartyId: str(f, "counterpartyId") && str(f, "counterpartyId") !== "none" ? str(f, "counterpartyId") : undefined,
+    ...docLink(f),
   }));
 }
 

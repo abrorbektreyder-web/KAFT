@@ -35,8 +35,8 @@ export default async function MoneyPage({ searchParams }: PageProps<"/pul">) {
         <div className="flex flex-wrap gap-2">
           {canWrite && (
             <>
-              <TransactionSheet direction="in" accounts={open} categories={data.categories} counterparties={data.counterparties} today={today} />
-              <TransactionSheet direction="out" accounts={open} categories={data.categories} counterparties={data.counterparties} today={today} />
+              <TransactionSheet direction="in" accounts={open} categories={data.categories} counterparties={data.counterparties} docs={data.docs} today={today} />
+              <TransactionSheet direction="out" accounts={open} categories={data.categories} counterparties={data.counterparties} docs={data.docs} today={today} />
               {open.length > 1 && <TransferSheet accounts={open} today={today} />}
             </>
           )}

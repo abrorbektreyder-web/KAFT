@@ -6,12 +6,14 @@ import { ArrowLeft, Clock } from "lucide-react";
 import { CpError } from "@kaft/core";
 import { requireCtx } from "@/lib/server";
 import { loadCounterpartyCard } from "@/lib/counterparties";
-import { dmy, money } from "@/lib/format";
+import { dmy, money, todayIso } from "@/lib/format";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ContractSheet, CounterpartySheet, DecisionButtons } from "../forms";
 import { ChangeList } from "../changes";
+import { DebtsCard } from "../debts";
+import { OpeningDebtSheet } from "../../savdo/forms";
 
 export default async function CounterpartyPage({ params }: PageProps<"/kontragentlar/[id]">) {
   const ctx = await requireCtx();
@@ -79,10 +81,11 @@ export default async function CounterpartyPage({ params }: PageProps<"/kontragen
               <p className="text-xs text-muted-foreground">{t("f_paymentTermDays")}</p>
               <p className="font-medium">{card.paymentTermDays != null ? t("days", { count: card.paymentTermDays }) : t("empty_value")}</p>
             </div>
-            <p className="text-xs text-muted-foreground">{t("salesLater")}</p>
           </CardContent>
         </Card>
       </div>
+
+      <DebtsCard debts={data.debts} action={access.full ? <OpeningDebtSheet counterpartyId={card.id} today={todayIso()} /> : undefined} />
 
       <Card>
         <CardHeader className="flex items-center justify-between gap-2">

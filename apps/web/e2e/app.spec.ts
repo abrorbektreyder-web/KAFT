@@ -148,3 +148,20 @@ test("kontragent: savdo menejeri qo‘shadi, tahriri egaga tasdiqqa ketadi (CP-0
   await expect(page.getByRole("main").getByRole("button", { name: "Tasdiqlash" })).toHaveCount(0);
 });
 
+test("savdo: menejer o‘z mijoziga sotadi, qarz kontragent kartasida ko‘rinadi (SAL-01)", async ({ page }) => {
+  await login(page, SAVDO);
+  await page.goto("/savdo/yangi");
+  await page.getByLabel("Kontragent", { exact: true }).click();
+  await page.getByRole("option", { name: "E2E do‘kon" }).click();
+  await page.getByLabel("Tovar", { exact: true }).click();
+  await page.getByRole("option", { name: /E2E suv/ }).click();
+  await page.getByLabel("Miqdor, dona").fill("10");
+  await page.getByRole("button", { name: "Saqlash" }).click();
+  // 10 × 5 000 so'm (chakana narx avtomatik)
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(/^S-\d{6}$/);
+  await expect(page.getByText(/50\s000 so‘m/).first()).toBeVisible();
+  await page.getByRole("main").getByRole("link", { name: "E2E do‘kon" }).click();
+  await expect(page.getByText("Bizga qarz (mijoz)")).toBeVisible();
+  await expect(page.getByRole("main").getByRole("link", { name: /^S-\d{6}$/ }).first()).toBeVisible();
+});
+

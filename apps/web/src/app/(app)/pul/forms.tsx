@@ -15,12 +15,16 @@ type Named = { id: string; name: string };
 const CURRENCIES = ["UZS", "USD", "EUR", "RUB"] as const;
 const TYPES = ["cash", "bank", "card", "payment"] as const;
 
-export function TransactionSheet({ direction, accounts, categories, counterparties, today }: {
-  direction: "in" | "out"; accounts: Account[]; categories: Category[]; counterparties: Named[]; today: string;
+type Doc = { id: string; number: string; counterpartyId: string; direction: "in" | "out" };
+
+export function TransactionSheet({ direction, accounts, categories, counterparties, docs, today }: {
+  direction: "in" | "out"; accounts: Account[]; categories: Category[]; counterparties: Named[]; docs: Doc[]; today: string;
 }) {
   const t = useTranslations("money");
   const form = useSheetForm(addTransaction);
   const [accountId, setAccountId] = useState(accounts.length === 1 ? accounts[0]!.id : "");
+  const [cpId, setCpId] = useState("none");
+  const cpDocs = docs.filter((d) => d.counterpartyId === cpId && d.direction === direction);
   const currency = accounts.find((a) => a.id === accountId)?.currency;
   const title = direction === "in" ? t("income") : t("expense");
   return (
@@ -43,8 +47,14 @@ export function TransactionSheet({ direction, accounts, categories, counterparti
       </Field>
       {counterparties.length > 0 && (
         <Field id={`${direction}-cp`} label={t("fCounterparty")}>
-          <Picker id={`${direction}-cp`} name="counterpartyId" required={false}
+          <Picker id={`${direction}-cp`} name="counterpartyId" required={false} value={cpId} onChange={setCpId}
             items={[{ value: "none", label: t("fNoCounterparty") }, ...counterparties.map((c) => ({ value: c.id, label: c.name }))]} />
+        </Field>
+      )}
+      {cpDocs.length > 0 && (
+        <Field id={`${direction}-doc`} label={t("fDoc")}>
+          <Picker id={`${direction}-doc`} name="docId" required={false}
+            items={[{ value: "none", label: t("fNoDoc") }, ...cpDocs.map((d) => ({ value: d.id, label: d.number }))]} />
         </Field>
       )}
       <Field id={`${direction}-date`} label={t("fDate")}>

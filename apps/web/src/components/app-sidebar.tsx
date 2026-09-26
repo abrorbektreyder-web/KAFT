@@ -18,8 +18,8 @@ const NAV = [
     { href: "/", key: "home", icon: Home },
     { href: "/pul", key: "money", icon: Wallet },
     { href: "/kontragentlar", key: "counterparties", icon: Building2 },
-    { href: "/savdo", key: "sales", icon: ShoppingCart, soon: "R1" },
-    { href: "/xarid", key: "purchases", icon: Truck, soon: "R1" },
+    { href: "/savdo", key: "sales", icon: ShoppingCart },
+    { href: "/xarid", key: "purchases", icon: Truck },
     { href: "/ombor", key: "warehouse", icon: Box, soon: "R2" },
   ] },
   { group: "team", items: [

@@ -4,7 +4,7 @@ Manba: `docs/prd-tz-v1.0.pdf`. Talab ID'lari PRD bilan bir xil.
 
 Belgilar: `[x]` bajarildi · `[~]` jarayonda · `[ ]` boshlanmagan
 
-**Hozir:** R1 · 8-hafta (branch `r1/hafta-8-kontragentlar`). 7-hafta (pul) yakunlandi. Kutilmoqda: ko'p valyutali qarz qoidasi (9-hafta boshida), Telegram bot tokeni, Telegram Gateway tokeni, server provayderi.
+**Hozir:** R1 · 9-hafta (branch `r1/hafta-9-savdo-xarid`). 8-hafta (kontragentlar) yakunlandi. Kutilmoqda: Telegram bot tokeni, Telegram Gateway tokeni, server provayderi.
 
 ---
 
@@ -121,9 +121,24 @@ Haftalik reja (PRD'da R1 bo'yicha haftalik bo'linish yo'q — 2026-09-25 da keli
 - [x] «Kontragentlar» sahifalari: ro'yxat (qidiruv, rol filtri), karta, qo'shish/tahrirlash, shartnoma, Excel import, tasdiq so'rovlari (uz/ru)
 - [x] Demo: 8 kontragent, 4 shartnoma
 
+### 9-hafta: savdo, xarid va qarzlar
+- [x] Tovarlar (oddiy katalog): nom, SKU, o'lchov birligi, 3 narx turi — ombor va qoldiq R2 da (INV)
+- [x] SAL-01 Sotuv hujjati: kontragent, kompaniya, tovarlar, narx, chegirma, valyuta, to'lov muddati (kartadan); raqam S-000001; ombor maydoni — R2
+- [x] SAL-02 Narx turlari: chakana, ulgurji, maxsus — narx avtomatik, qo'lda o'zgartiriladi
+- [x] SAL-05 Sotuvdan qaytarish — asl narxda, sotilganidan ko'p emas; qarzni kamaytiradi
+- [x] PUR-01 Xarid hujjati (ta'minotchi, tovarlar, narx, valyuta, to'lov muddati); PUR-05 «kimdan qancha oldik» — ta'minotchi/tovar kesimida, davr bo'yicha
+- [x] Qarzlar hujjat va to'lovlardan hisoblanadi (saqlanmaydi): ikki tomonlama, hujjat valyutasida, so'm ekvivalenti, muddati o'tgani, avans
+- [x] Ko'p valyutali qoida: boshqa valyutadagi to'lov to'lov kunidagi kurs bilan; hujjat tanlanmasa — eng eski ochiq hujjatga
+- [x] CP-05 Kredit limiti: oshsa sotuv ega tasdig'ini kutadi (xabar platformada va Telegram'da); kurs bo'lmasa — oshgan deb olinadi
+- [x] CP-10 Boshlang'ich qarzlar: qo'lda va Excel'dan (STIR yoki nom bo'yicha, hammasi yoki hech narsa)
+- [x] Hujjatlar o'chirilmaydi/o'zgartirilmaydi — faqat sababi bilan bekor qilinadi (trigger); qatorlar faqat yoziladi
+- [x] Sahifalar: «Savdo», «Xarid», «Tovarlar», hujjat ko'rinishi, kontragent kartasida qarzlar, kirimda hujjat tanlash (uz/ru)
+- [x] Demo: 8 tovar, sotuv/qaytarish/xarid, to'lovlar, boshlang'ich qarzlar; dev bazaga oxirgi 60 kun Markaziy bank kurslari
+- [ ] SAL-07 amoCRM/Bitrix24 — 12-hafta
+
 ### R1 talablari
-- [ ] Ko'p valyutali qarz qoidasi (9-haftagacha hal qilinadi)
-- [~] FIN-01…08, FIN-10 — 01…04 tayyor (7-hafta) · CP-01/02/08 tayyor, CP-03/05/10 qisman (8-hafta), CP-04 · SAL-01/02/05/07 · PUR-01/05
+- [x] Ko'p valyutali qarz qoidasi — 2026-09-26 da tasdiqlandi (qarorlar jurnalida)
+- [~] FIN-01…08, FIN-10 — 01…04 tayyor (7-hafta) · CP-01/02/05/08/10 tayyor, CP-03 qisman · SAL-01/02/05 tayyor, SAL-07 — 12-hafta · PUR-01/05 tayyor
 - [~] INT-02 tayyor · INT-03/04 · CTL-05 · CORE-11/12 · HR-09 · DOC-03/04
 
 ## R2 — Operatsiya va nazorat (13–18 hafta)
@@ -143,6 +158,8 @@ Haftalik reja (PRD'da R1 bo'yicha haftalik bo'linish yo'q — 2026-09-25 da keli
 - 2026-09-25: Kassir o'tkazmani faqat o'z kassasidan qiladi (masalan, inkassatsiya); qabul qiluvchi kassa ixtiyoriy.
 - 2026-09-25: Egasi qarori — tasdiqlash huquqi yo'q foydalanuvchi (buxgalter, savdo menejeri) tahriri ega tasdiqlagach kuchga kiradi (PRD 8 dagi «Y» dan qat'iyroq). Yangi yozuv qo'shish — tasdiqsiz. Keyingi modullarda ham shu mexanizm.
 - 2026-09-25: Kontragent — butun tenant (holding) uchun umumiy karta; STIR tenant ichida takrorlanmaydi.
+- 2026-09-26: Ko'p valyutali qarz — qarz hujjat valyutasida; boshqa valyutadagi to'lov to'lov kunidagi kurs (to'lovniki — operatsiya kursi, hujjatniki — Markaziy bank) bilan o'giriladi; hujjat tanlanmagan to'lov eng eski ochiq hujjatni yopadi; ortiqchasi — avans.
+- 2026-09-26: Tovar katalogi (oddiy) R1 ga olindi — sotuv hujjatiga tovar kerak; ombor, qoldiq, tannarx — R2.
 - 2026-09-24: Bitta kod bazasi, ko'p mijoz; moslashtirish tenant sozlamalari va modul kalitlari orqali.
 - 2026-09-24: Dev baza — Supabase bulutida (faqat soxta ma'lumot), lokal Docker yo'q.
 - 2026-09-24: Web kirish — email + parol + TOTP 2FA; telefon (Telegram Gateway) xodimlar uchun keyin.

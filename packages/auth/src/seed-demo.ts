@@ -8,6 +8,7 @@ import { createEmployee, createTenant, createUser, FakeTelegram, recordEvent, ru
 import { acceptInvite, ConsoleMailer, createAuth, createInvitation } from './index.ts';
 import { seedDemoMoney } from './demo-money.ts';
 import { seedDemoCounterparties } from './demo-counterparties.ts';
+import { seedDemoTrade } from './demo-trade.ts';
 
 const envFile = resolve(import.meta.dirname, '../../../.env.local');
 if (!process.env.DATABASE_URL && existsSync(envFile)) process.loadEnvFile(envFile);
@@ -75,6 +76,9 @@ try {
   await seedDemoCounterparties(db, ctx, { today });
   // Pul: kassalar, 3 haftalik kirim/chiqim, inkassatsiya va ayirboshlash (R1)
   await seedDemoMoney(db, ctx, { companyIds: [companies[0]!.id, companies[1]!.id], today });
+
+  // Savdo va xarid: tovarlar, sotuvlar, qaytarish, to'lovlar, boshlang'ich qarzlar (R1, 9-hafta)
+  await seedDemoTrade(db, ctx, { companyIds: [companies[0]!.id, companies[1]!.id], today });
 
   // Loginlar: taklif → parol (ega va HR)
   const logins: [string, string, string][] = [];

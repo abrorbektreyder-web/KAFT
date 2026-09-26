@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { CounterpartySheet, DecisionButtons, ImportSheet } from "./forms";
+import { ImportDebtsSheet } from "../savdo/forms";
 import { ChangeList } from "./changes";
 
 export default async function CounterpartiesPage({ searchParams }: PageProps<"/kontragentlar">) {
@@ -32,6 +33,7 @@ export default async function CounterpartiesPage({ searchParams }: PageProps<"/k
         </div>
         <div className="flex flex-wrap gap-2">
           {data.access.full && <ImportSheet />}
+          {data.access.full && <ImportDebtsSheet />}
           {data.access.create && <CounterpartySheet users={data.users} canAssign={data.access.full} />}
         </div>
       </section>

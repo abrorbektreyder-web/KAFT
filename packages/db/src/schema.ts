@@ -377,6 +377,127 @@ export const changeRequests = pgTable('change_requests', {
   check('change_requests_status_check', sql`${t.status} in ('pending', 'approved', 'rejected')`),
 ]);
 
+// ---------------------------------------------------------------- Tovarlar, sotuv va xarid (R1)
+
+// Tovarlar (oddiy katalog): SAL-02 narx turlari — chakana, ulgurji, maxsus. Ombor/qoldiq — R2 (INV).
+export const products = pgTable('products', {
+  id: id(),
+  tenantId: tenantId(),
+  name: text('name').notNull(),
+  sku: text('sku'),
+  /** dona, kg, l, m, quti … */
+  unit: text('unit').notNull(),
+  /** Narxlar tiyin/sentda, `currency` da */
+  priceRetail: bigint('price_retail', { mode: 'number' }),
+  priceWholesale: bigint('price_wholesale', { mode: 'number' }),
+  priceSpecial: bigint('price_special', { mode: 'number' }),
+  currency: char('currency', { length: 3 }).notNull().default('UZS'),
+  isArchived: boolean('is_archived').notNull().default(false),
+  createdAt: createdAt(),
+}, (t) => [
+  unique('products_tenant_id_id_key').on(t.tenantId, t.id),
+  unique('products_tenant_sku_key').on(t.tenantId, t.sku),
+]);
+
+// Hujjat raqamlari: har tenantda tur bo'yicha ketma-ket (S-000001, Q-, X-, B-)
+export const docCounters = pgTable('doc_counters', {
+  tenantId: tenantId(),
+  kind: text('kind').notNull(),
+  last: integer('last').notNull(),
+}, (t) => [primaryKey({ columns: [t.tenantId, t.kind] })]);
+
+const tradeDocColumns = () => ({
+  id: id(),
+  tenantId: tenantId(),
+  number: text('number').notNull(),
+  companyId: uuid('company_id'),
+  counterpartyId: uuid('counterparty_id').notNull(),
+  docDate: date('doc_date').notNull(),
+  dueDate: date('due_date').notNull(),
+  currency: char('currency', { length: 3 }).notNull(),
+  /** Tiyin/sentda — hujjat o'zgarmas, shuning uchun jami yoziladi */
+  total: bigint('total', { mode: 'number' }).notNull(),
+  // posted | pending (kredit limitidan oshgan — ega tasdig'ini kutadi)
+  status: text('status').notNull().default('posted'),
+  /** Mas'ul menejer — savdo menejerining «faqat o'ziniki» qamrovi */
+  managerUserId: uuid('manager_user_id'),
+  note: text('note'),
+  createdBy: uuid('created_by'),
+  createdAt: createdAt(),
+  approvedBy: uuid('approved_by'),
+  approvedAt: timestamp('approved_at', { withTimezone: true }),
+  cancelledAt: timestamp('cancelled_at', { withTimezone: true }),
+  cancelReason: text('cancel_reason'),
+  cancelledBy: uuid('cancelled_by'),
+});
+
+// SAL-01/05: sotuv, qaytarish (return_of_id) va boshlang'ich qarz (kind = opening). O'chirilmaydi — bekor qilinadi.
+export const sales = pgTable('sales', {
+  ...tradeDocColumns(),
+  // sale | return | opening
+  kind: text('kind').notNull(),
+  returnOfId: uuid('return_of_id'),
+  // retail | wholesale | special
+  priceType: text('price_type'),
+}, (t) => [
+  unique('sales_tenant_id_id_key').on(t.tenantId, t.id),
+  unique('sales_tenant_number_key').on(t.tenantId, t.number),
+  foreignKey({ columns: [t.tenantId, t.counterpartyId], foreignColumns: [counterparties.tenantId, counterparties.id] }).onDelete('cascade'),
+  foreignKey({ columns: [t.tenantId, t.companyId], foreignColumns: [companies.tenantId, companies.id] }),
+  foreignKey({ columns: [t.tenantId, t.returnOfId], foreignColumns: [t.tenantId, t.id] }),
+  check('sales_kind_check', sql`${t.kind} in ('sale', 'return', 'opening')`),
+  check('sales_status_check', sql`${t.status} in ('posted', 'pending')`),
+  check('sales_total_check', sql`${t.total} > 0`),
+  index('sales_counterparty_idx').on(t.tenantId, t.counterpartyId, t.docDate),
+]);
+
+export const saleLines = pgTable('sale_lines', {
+  id: id(),
+  tenantId: tenantId(),
+  saleId: uuid('sale_id').notNull(),
+  productId: uuid('product_id').notNull(),
+  qty: numeric('qty', { precision: 18, scale: 3 }).notNull(),
+  price: bigint('price', { mode: 'number' }).notNull(),
+  discountPct: numeric('discount_pct', { precision: 5, scale: 2 }).notNull().default('0'),
+  amount: bigint('amount', { mode: 'number' }).notNull(),
+}, (t) => [
+  foreignKey({ columns: [t.tenantId, t.saleId], foreignColumns: [sales.tenantId, sales.id] }).onDelete('cascade'),
+  foreignKey({ columns: [t.tenantId, t.productId], foreignColumns: [products.tenantId, products.id] }),
+  check('sale_lines_qty_check', sql`${t.qty} > 0`),
+  index('sale_lines_sale_idx').on(t.saleId),
+]);
+
+// PUR-01: xarid va boshlang'ich qarz (biz qarzdormiz, kind = opening).
+export const purchases = pgTable('purchases', {
+  ...tradeDocColumns(),
+  // purchase | opening
+  kind: text('kind').notNull(),
+}, (t) => [
+  unique('purchases_tenant_id_id_key').on(t.tenantId, t.id),
+  unique('purchases_tenant_number_key').on(t.tenantId, t.number),
+  foreignKey({ columns: [t.tenantId, t.counterpartyId], foreignColumns: [counterparties.tenantId, counterparties.id] }).onDelete('cascade'),
+  foreignKey({ columns: [t.tenantId, t.companyId], foreignColumns: [companies.tenantId, companies.id] }),
+  check('purchases_kind_check', sql`${t.kind} in ('purchase', 'opening')`),
+  check('purchases_status_check', sql`${t.status} in ('posted', 'pending')`),
+  check('purchases_total_check', sql`${t.total} > 0`),
+  index('purchases_counterparty_idx').on(t.tenantId, t.counterpartyId, t.docDate),
+]);
+
+export const purchaseLines = pgTable('purchase_lines', {
+  id: id(),
+  tenantId: tenantId(),
+  purchaseId: uuid('purchase_id').notNull(),
+  productId: uuid('product_id').notNull(),
+  qty: numeric('qty', { precision: 18, scale: 3 }).notNull(),
+  price: bigint('price', { mode: 'number' }).notNull(),
+  amount: bigint('amount', { mode: 'number' }).notNull(),
+}, (t) => [
+  foreignKey({ columns: [t.tenantId, t.purchaseId], foreignColumns: [purchases.tenantId, purchases.id] }).onDelete('cascade'),
+  foreignKey({ columns: [t.tenantId, t.productId], foreignColumns: [products.tenantId, products.id] }),
+  check('purchase_lines_qty_check', sql`${t.qty} > 0`),
+  index('purchase_lines_purchase_idx').on(t.purchaseId),
+]);
+
 // ---------------------------------------------------------------- Pul (FIN, R1)
 
 // FIN-01: kassalar va hisoblar. Valyuta keyin o'zgarmaydi — operatsiyalar (tenant_id, id, currency) ga bog'langan.
@@ -434,6 +555,9 @@ export const cashTransactions = pgTable('cash_transactions', {
   categoryId: uuid('category_id'),
   /** Kontragent (CP-03: kartada to'lovlar) */
   counterpartyId: uuid('counterparty_id'),
+  /** Qaysi hujjat uchun to'lov (ixtiyoriy; bo'lmasa — eng eski ochiq hujjatga) */
+  saleId: uuid('sale_id'),
+  purchaseId: uuid('purchase_id'),
   transferId: uuid('transfer_id'),
   occurredOn: date('occurred_on').notNull(),
   /** Asos hujjat: chek, to'lov topshiriqnomasi, shartnoma */
@@ -448,6 +572,8 @@ export const cashTransactions = pgTable('cash_transactions', {
   foreignKey({ columns: [t.tenantId, t.accountId, t.currency], foreignColumns: [cashAccounts.tenantId, cashAccounts.id, cashAccounts.currency] }).onDelete('cascade'),
   foreignKey({ columns: [t.tenantId, t.categoryId], foreignColumns: [expenseCategories.tenantId, expenseCategories.id] }),
   foreignKey({ columns: [t.tenantId, t.counterpartyId], foreignColumns: [counterparties.tenantId, counterparties.id] }),
+  foreignKey({ columns: [t.tenantId, t.saleId], foreignColumns: [sales.tenantId, sales.id] }),
+  foreignKey({ columns: [t.tenantId, t.purchaseId], foreignColumns: [purchases.tenantId, purchases.id] }),
   check('cash_transactions_amount_check', sql`${t.amount} > 0`),
   check('cash_transactions_direction_check', sql`${t.direction} in ('in', 'out')`),
   check('cash_transactions_kind_check', sql`${t.kind} in ('opening', 'income', 'expense', 'transfer')`),

@@ -169,6 +169,20 @@
       "when": 1790366458949,
       "tag": "0023_counterparties_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1790409950006,
+      "tag": "0024_trade",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1790409952507,
+      "tag": "0025_trade_guard",
+      "breakpoints": true
     }
   ]
 }

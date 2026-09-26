@@ -4,6 +4,7 @@ import ExcelJS from 'exceljs';
 import { and, eq, inArray, schema, withTenant, type Db, type Tx } from '@kaft/db';
 import { authorize, deny, type Ctx } from './permissions.ts';
 import { secretError, type EmployeeInput, type Secrets } from './employees.ts';
+import { insertOpeningDebt, type OpeningDebtInput } from './trade.ts';
 import { CpError, normalizeCounterparty, type CounterpartyInput, type CounterpartyPatch, type CounterpartyRole } from './counterparties.ts';
 
 type Key = 'lastName' | 'firstName' | 'middleName' | 'birthDate' | 'phone' | 'department' | 'position'
@@ -332,6 +333,104 @@ export async function importCounterparties(db: Db, ctx: Ctx, file: Buffer | Arra
     const inserted = await tx.insert(schema.counterparties).values(rows.map((r) => ({ ...r.data, tenantId: ctx.tenantId })))
       .returning({ id: schema.counterparties.id });
     await tx.insert(schema.auditLog).values(inserted.map((c) => ({ tenantId: ctx.tenantId, actorUserId: ctx.userId, action: 'create', entity: 'counterparty', entityId: c.id, meta: { source: 'excel' } })));
+  });
+  return { ok: true, imported: rows.length };
+}
+
+// ---------------------------------------------------------------- boshlang'ich qarzlar (CP-10, INT-01)
+
+type DebtKey = 'counterparty' | 'side' | 'amount' | 'currency' | 'date' | 'dueDate';
+
+export const OPENING_DEBT_COLUMNS: { key: DebtKey; title: string; required?: boolean; width: number }[] = [
+  { key: 'counterparty', title: 'Kontragent*', required: true, width: 32 },
+  { key: 'side', title: 'Kim qarzdor*', required: true, width: 16 },
+  { key: 'amount', title: 'Summa*', required: true, width: 16 },
+  { key: 'currency', title: 'Valyuta*', required: true, width: 10 },
+  { key: 'date', title: 'Sana*', required: true, width: 13 },
+  { key: 'dueDate', title: 'To‘lov muddati', width: 15 },
+];
+
+// «Kim qarzdor»: mijoz/kontragent — bizga qarz; biz — biz qarzdormiz
+const SIDE_WORDS: Record<string, 'receivable' | 'payable'> = {
+  mijoz: 'receivable', kontragent: 'receivable', ular: 'receivable', клиент: 'receivable', контрагент: 'receivable',
+  biz: 'payable', мы: 'payable',
+};
+
+export async function buildOpeningDebtTemplate(): Promise<ExcelJS.Buffer> {
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet('Qarzlar', { views: [{ state: 'frozen', ySplit: 1 }] });
+  ws.columns = OPENING_DEBT_COLUMNS.map((c) => ({ header: c.title, key: c.key, width: c.width }));
+  ws.getRow(1).font = { bold: true };
+  const help = wb.addWorksheet('Yo‘riqnoma');
+  [
+    ['* belgili ustunlar majburiy.'],
+    ['Kontragent: STIR (9 raqam) yoki kartadagi nomi aynan. Avval kontragentlarni import qiling.'],
+    ['Kim qarzdor: «mijoz» — kontragent bizga qarz; «biz» — biz kontragentga qarzdormiz.'],
+    ['Summa — valyutada (masalan 1500000 yoki 250,50). Valyuta: UZS, USD, EUR, RUB.'],
+    ['Sanalar: KK.OO.YYYY. To‘lov muddati bo‘sh bo‘lsa — sana bilan bir xil.'],
+  ].forEach((r) => help.addRow(r));
+  help.getColumn(1).width = 90;
+  return wb.xlsx.writeBuffer();
+}
+
+/** Boshlang'ich qarzlarni Excel'dan import (hammasi yoki hech narsa). */
+export async function importOpeningDebts(db: Db, ctx: Ctx, file: Buffer | ArrayBuffer): Promise<ImportResult> {
+  if ((await authorize(db, ctx, 'cp', 'create')) !== 'all') await deny(db, ctx, 'cp', 'create');
+  const wb = new ExcelJS.Workbook();
+  await wb.xlsx.load(file as ArrayBuffer);
+  const ws = wb.getWorksheet('Qarzlar') ?? wb.worksheets[0];
+  if (!ws) return { ok: false, errors: [{ row: 0, column: '', message: 'Faylda varaq topilmadi' }] };
+
+  const colOf = new Map<DebtKey, number>();
+  ws.getRow(1).eachCell((cell, n) => {
+    const col = OPENING_DEBT_COLUMNS.find((c) => c.title === text(cell.value));
+    if (col) colOf.set(col.key, n);
+  });
+  const errors: ImportError[] = OPENING_DEBT_COLUMNS.filter((c) => c.required && !colOf.has(c.key))
+    .map((c) => ({ row: 1, column: c.title, message: 'Majburiy ustun topilmadi — shablondan foydalaning' }));
+  if (errors.length) return { ok: false, errors };
+
+  const cps = await withTenant(db, ctx.tenantId, (tx) => tx.select({ id: schema.counterparties.id, name: schema.counterparties.name, stir: schema.counterparties.stir }).from(schema.counterparties));
+  const title = (k: DebtKey) => OPENING_DEBT_COLUMNS.find((c) => c.key === k)!.title;
+  const rows: OpeningDebtInput[] = [];
+  ws.eachRow((r, n) => {
+    if (n === 1) return;
+    const raw = (k: DebtKey) => (colOf.has(k) ? text(r.getCell(colOf.get(k)!).value) : null);
+    const get = (k: DebtKey) => {
+      const v = raw(k);
+      return v instanceof Date ? v.toISOString().slice(0, 10) : v;
+    };
+    if (OPENING_DEBT_COLUMNS.every((c) => raw(c.key) == null)) return;
+    const rowErrors: ImportError[] = [];
+    const bad = (k: DebtKey, message: string) => rowErrors.push({ row: n, column: title(k), message });
+
+    const who = get('counterparty')?.trim() ?? '';
+    const matches = /^\d{9}$/.test(who) ? cps.filter((c) => c.stir === who) : cps.filter((c) => c.name.trim().toLowerCase() === who.toLowerCase());
+    if (!who) bad('counterparty', 'To‘ldirilishi shart');
+    else if (!matches.length) bad('counterparty', `Kontragent topilmadi: «${who}»`);
+    else if (matches.length > 1) bad('counterparty', 'Bir xil nomli bir nechta kontragent — STIR bilan kiriting');
+    const side = SIDE_WORDS[(get('side') ?? '').trim().toLowerCase()];
+    if (!side) bad('side', '«mijoz» (bizga qarz) yoki «biz» (biz qarzdormiz)');
+    const amountStr = (get('amount') ?? '').replace(/[\s ]/g, '').replace(',', '.');
+    const amount = /^\d+(\.\d{1,2})?$/.test(amountStr) ? Math.round(Number(amountStr) * 100) : null;
+    if (!amount) bad('amount', 'Summa musbat son bo‘lishi kerak');
+    const currency = (get('currency') ?? '').trim().toUpperCase();
+    if (!['UZS', 'USD', 'EUR', 'RUB'].includes(currency)) bad('currency', 'Valyuta: UZS, USD, EUR yoki RUB');
+    const dateRaw = raw('date');
+    const date = dateRaw ? parseDate(dateRaw) : null;
+    if (!date) bad('date', 'Sana noto‘g‘ri — KK.OO.YYYY ko‘rinishida kiriting');
+    const dueRaw = raw('dueDate');
+    const dueDate = dueRaw ? parseDate(dueRaw) : undefined;
+    if (dueRaw && !dueDate) bad('dueDate', 'Sana noto‘g‘ri — KK.OO.YYYY ko‘rinishida kiriting');
+
+    if (rowErrors.length) errors.push(...rowErrors);
+    else rows.push({ counterpartyId: matches[0]!.id, side: side!, amount: amount!, currency, date: date!, dueDate: dueDate ?? undefined });
+  });
+  if (!rows.length && !errors.length) return { ok: false, errors: [{ row: 0, column: '', message: 'Fayl bo‘sh — kamida bitta qator kerak' }] };
+  if (errors.length) return { ok: false, errors };
+
+  await withTenant(db, ctx.tenantId, async (tx) => {
+    for (const r of rows) await insertOpeningDebt(tx, ctx, r);
   });
   return { ok: true, imported: rows.length };
 }

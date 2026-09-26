@@ -67,6 +67,10 @@ const MESSAGES: Record<string, Record<'uz' | 'ru', { title: string; body: (p: P)
     uz: { title: 'Kontragent shartnomasi', body: (p) => `${p.name} — shartnoma №${p.number} muddati ${dmy(p.date!)} da tugaydi` },
     ru: { title: 'Договор с контрагентом', body: (p) => `${p.name} — срок договора №${p.number} истекает ${dmy(p.date!)}` },
   },
+  sale_over_limit: {
+    uz: { title: 'Kredit limiti', body: (p) => `${p.name} — ${p.number} sotuv kredit limitidan oshdi, tasdiqingiz kerak` },
+    ru: { title: 'Кредитный лимит', body: (p) => `${p.name} — продажа ${p.number} превышает кредитный лимит, нужно ваше утверждение` },
+  },
   change_request: {
     uz: { title: 'Tasdiq so‘rovi', body: (p) => `${p.requester} «${p.name}» ma’lumotlarini o‘zgartirishni so‘radi` },
     ru: { title: 'Запрос на изменение', body: (p) => `${p.requester} просит изменить данные «${p.name}»` },

@@ -2,7 +2,7 @@
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createDb, schema, withTenant } from '@kaft/db';
-import { createCashAccount, createCounterparty, createEmployee, createTenant, createUser, FakeTelegram, recordEvent, runDailyJobs } from '@kaft/core';
+import { createCashAccount, createCounterparty, createEmployee, createProduct, createTenant, createUser, FakeTelegram, recordEvent, runDailyJobs } from '@kaft/core';
 import { acceptInvite, ConsoleMailer, createAuth, createInvitation } from './index.ts';
 
 const envFile = resolve(import.meta.dirname, '../../../.env.local');
@@ -47,6 +47,8 @@ try {
   await createCashAccount(db, ega, { companyId, name: 'Boshqa kassa', type: 'bank', currency: 'UZS', openingBalance: 5_000_000_00, openingOn: today });
 
   await createCounterparty(db, ega, { name: 'E2E hamkor', roles: ['customer'], managerUserId: savdoId });
+  await createCounterparty(db, ega, { name: 'E2E do‘kon', roles: ['customer'], managerUserId: savdoId });
+  await createProduct(db, ega, { name: 'E2E suv', unit: 'dona', prices: { retail: 5_000_00, wholesale: 4_000_00 } });
 
   for (const userId of [hrId, kassirId, savdoId]) {
     await createInvitation(db, { tenantId: t, userId }, { mailer, baseURL: 'http://localhost:3000' });

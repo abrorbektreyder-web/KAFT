@@ -14,3 +14,4 @@ export * from './telegram-link.ts';
 export * from './search.ts';
 export * from './finance.ts';
 export * from './counterparties.ts';
+export * from './trade.ts';
