@@ -12,12 +12,12 @@ export type AccountType = (typeof ACCOUNT_TYPES)[number];
 export type Direction = 'in' | 'out';
 
 /** Yangi tenantga yoziladigan standart moddalar (ega keyin o'zinikini qo'shadi). */
-export const DEFAULT_CATEGORIES: { name: string; nameRu: string; direction: Direction }[] = [
+export const DEFAULT_CATEGORIES: { name: string; nameRu: string; direction: Direction; inPl?: boolean }[] = [
   { name: 'Sotuvdan tushum', nameRu: 'Выручка от продаж', direction: 'in' },
   { name: 'Qarz qaytarildi', nameRu: 'Возврат долга', direction: 'in' },
   { name: 'Kredit olindi', nameRu: 'Получение кредита', direction: 'in' },
   { name: 'Boshqa kirim', nameRu: 'Прочие поступления', direction: 'in' },
-  { name: 'Tovar xaridi', nameRu: 'Закупка товаров', direction: 'out' },
+  { name: 'Tovar xaridi', nameRu: 'Закупка товаров', direction: 'out', inPl: false },
   { name: 'Ijara', nameRu: 'Аренда', direction: 'out' },
   { name: 'Oylik', nameRu: 'Зарплата', direction: 'out' },
   { name: 'Soliqlar', nameRu: 'Налоги', direction: 'out' },
@@ -25,7 +25,7 @@ export const DEFAULT_CATEGORIES: { name: string; nameRu: string; direction: Dire
   { name: 'Transport', nameRu: 'Транспорт', direction: 'out' },
   { name: 'Marketing', nameRu: 'Маркетинг', direction: 'out' },
   { name: 'Bank xizmatlari', nameRu: 'Банковские услуги', direction: 'out' },
-  { name: 'Kredit to‘lovi', nameRu: 'Погашение кредита', direction: 'out' },
+  { name: 'Kredit to‘lovi', nameRu: 'Погашение кредита', direction: 'out', inPl: false },
   { name: 'Boshqa chiqim', nameRu: 'Прочие расходы', direction: 'out' },
 ];
 

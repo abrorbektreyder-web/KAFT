@@ -183,6 +183,20 @@
       "when": 1790409952507,
       "tag": "0025_trade_guard",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1790414829958,
+      "tag": "0026_planning",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1790414832181,
+      "tag": "0027_planning_rls",
+      "breakpoints": true
     }
   ]
 }

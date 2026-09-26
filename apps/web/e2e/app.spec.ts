@@ -165,3 +165,18 @@ test("savdo: menejer o‘z mijoziga sotadi, qarz kontragent kartasida ko‘rinad
   await expect(page.getByRole("main").getByRole("link", { name: /^S-\d{6}$/ }).first()).toBeVisible();
 });
 
+test("kassa yopish: kassir haqiqiy qoldiqni kiritadi, farq ko‘rinadi (FIN-08)", async ({ page }, info) => {
+  await login(page, KASSIR);
+  await page.goto("/pul/yopish");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Kunlik kassa yopish");
+  // Har loyiha o'z kunini yopadi (kuniga bir marta qoidasi)
+  const d = new Date(Date.now() + 5 * 3_600_000 - (info.project.name === "telefon" ? 86_400_000 : 0)).toISOString().slice(0, 10);
+  await page.getByLabel("Sana", { exact: true }).fill(d);
+  await page.getByLabel(/^Sanalgan summa/).fill("1");
+  await page.getByRole("button", { name: "Kassani yopish" }).click();
+  await expect(page.getByText(/Kassa yopildi — farq/)).toBeVisible();
+  await expect(page.getByRole("row", { name: new RegExp(`${d.slice(8, 10)}\.${d.slice(5, 7)}\.${d.slice(0, 4)}`) })).toBeVisible();
+  // Kassir prognoz va foyda-zararni ko'rmaydi
+  await expect(page.getByRole("link", { name: "Prognoz" })).toHaveCount(0);
+});
+

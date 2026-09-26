@@ -4,7 +4,7 @@ Manba: `docs/prd-tz-v1.0.pdf`. Talab ID'lari PRD bilan bir xil.
 
 Belgilar: `[x]` bajarildi · `[~]` jarayonda · `[ ]` boshlanmagan
 
-**Hozir:** R1 · 9-hafta (branch `r1/hafta-9-savdo-xarid`). 8-hafta (kontragentlar) yakunlandi. Kutilmoqda: Telegram bot tokeni, Telegram Gateway tokeni, server provayderi.
+**Hozir:** R1 · 10-hafta (branch `r1/hafta-10-prognoz`). 9-hafta (savdo, xarid, qarzlar) yakunlandi. Kutilmoqda: Telegram bot tokeni, Telegram Gateway tokeni, server provayderi.
 
 ---
 
@@ -100,9 +100,9 @@ Haftalik reja (PRD'da R1 bo'yicha haftalik bo'linish yo'q — 2026-09-25 da keli
 - [x] FIN-01 Kassalar va hisoblar: naqd, bank, karta, to'lov tizimi (Payme/Click); valyuta va mas'ul; boshlang'ich qoldiq
 - [x] FIN-02 Kirim va chiqim: summa, valyuta, modda, kompaniya (kassa orqali), asos hujjat; kontragent maydoni (bog'lanish — 8-hafta)
 - [x] Kirim/chiqim moddalari — standart ro'yxat (uz/ru) + o'z moddasi; byudjet va limit — R2 (FIN-09)
-- [x] Kassalararo o'tkazma va valyuta ayirboshlash (PRD'da R2, qoldiq to'g'ri bo'lishi uchun 7-haftaga olindi)
-- [x] FIN-03 / INT-02 Markaziy bank kursi — worker har kuni 08:00 yuklaydi (cbu.uz); operatsiya kursi qo'lda o'zgartiriladi
-- [x] FIN-04 Pul qoldig'i real vaqtda: har kassa, kompaniya va jami — so'mda va $ ekvivalentida; kurs yo'q bo'lsa ogohlantirish
+- [x] FIN-03 Kassalararo o'tkazma va valyuta ayirboshlash
+- [x] FIN-04 / INT-02 Markaziy bank kursi — worker har kuni 08:00 yuklaydi (cbu.uz); operatsiya kursi qo'lda o'zgartiriladi
+- [x] FIN-05 Pul qoldig'i real vaqtda: har kassa, kompaniya va jami — so'mda va $ ekvivalentida; kurs yo'q bo'lsa ogohlantirish
 - [x] Pul hujjatlari o'chirilmaydi/o'zgartirilmaydi — faqat sababi bilan bekor qilinadi (trigger); o'tkazma ikkala tomoni bilan bekor bo'ladi
 - [x] Ruxsatlar PRD 8 bo'yicha: kassir — faqat o'z kassasi, direktor — ko'radi, buxgalter — kiritadi (bekor qila olmaydi), bekor qilish — ega
 - [x] «Pul» sahifasi: jami va kompaniyalar, kassalar jadvali, oxirgi operatsiyalar, kirim/chiqim/o'tkazma/kassa ochish formalari (uz/ru)
@@ -136,9 +136,17 @@ Haftalik reja (PRD'da R1 bo'yicha haftalik bo'linish yo'q — 2026-09-25 da keli
 - [x] Demo: 8 tovar, sotuv/qaytarish/xarid, to'lovlar, boshlang'ich qarzlar; dev bazaga oxirgi 60 kun Markaziy bank kurslari
 - [ ] SAL-07 amoCRM/Bitrix24 — 12-hafta
 
-### R1 talablari
+### 10-hafta: to'lov kalendari, prognoz, kassa yopish, foyda-zarar
+- [x] FIN-06 To'lov kalendari: kutilayotgan kirim (mijoz qarzlari muddati) va chiqim (ta'minotchi qarzi, rejali to'lovlar); takrorlanish — bir marta, har hafta, har oy
+- [x] FIN-07 Kassa uzilishi prognozi: 30 kun kunma-kun, so'mda; manfiy kun — qizil bayroq, worker egaga kuniga bir marta xabar beradi (Telegram ham)
+- [x] FIN-08 Kunlik kassa yopish: kassir haqiqiy qoldiqni kiritadi; farq bo'lsa egaga xabar; kuniga bir marta, yozuv o'zgarmaydi
+- [x] FIN-10 Boshqaruv foyda-zarar: tushum − tannarx − xarajatlar, oy va kompaniya bo'yicha; tannarx — xaridlarning o'rtacha narxi; «Tovar xaridi» va «Kredit to'lovi» xarajatga kirmaydi
+- [x] «Pul» bo'limi ichki sahifalari: Qoldiq, To'lov kalendari, Prognoz, Kassa yopish, Foyda-zarar (uz/ru); kassir — faqat qoldiq va kassa yopish
+- [x] Demo: 6 ta rejali to'lov (ijara, oylik, soliq, kredit)
+- [x] Unit testlar fayllar bo'yicha parallel (3 tadan) — ~20 daqiqa o'rniga ~10
+
 - [x] Ko'p valyutali qarz qoidasi — 2026-09-26 da tasdiqlandi (qarorlar jurnalida)
-- [~] FIN-01…08, FIN-10 — 01…04 tayyor (7-hafta) · CP-01/02/05/08/10 tayyor, CP-03 qisman · SAL-01/02/05 tayyor, SAL-07 — 12-hafta · PUR-01/05 tayyor
+- [x] FIN-01…08, FIN-10 — tayyor (7- va 10-hafta) · CP-01/02/05/08/10 tayyor, CP-03 qisman · SAL-01/02/05 tayyor, SAL-07 — 12-hafta · PUR-01/05 tayyor
 - [~] INT-02 tayyor · INT-03/04 · CTL-05 · CORE-11/12 · HR-09 · DOC-03/04
 
 ## R2 — Operatsiya va nazorat (13–18 hafta)
@@ -160,6 +168,8 @@ Haftalik reja (PRD'da R1 bo'yicha haftalik bo'linish yo'q — 2026-09-25 da keli
 - 2026-09-25: Kontragent — butun tenant (holding) uchun umumiy karta; STIR tenant ichida takrorlanmaydi.
 - 2026-09-26: Ko'p valyutali qarz — qarz hujjat valyutasida; boshqa valyutadagi to'lov to'lov kunidagi kurs (to'lovniki — operatsiya kursi, hujjatniki — Markaziy bank) bilan o'giriladi; hujjat tanlanmagan to'lov eng eski ochiq hujjatni yopadi; ortiqchasi — avans.
 - 2026-09-26: Tovar katalogi (oddiy) R1 ga olindi — sotuv hujjatiga tovar kerak; ombor, qoldiq, tannarx — R2.
+- 2026-09-26: Prognoz — muddati o'tgan mijoz qarzi kirmaydi (alohida ko'rsatiladi), muddati o'tgan bizning qarz — bugungi chiqim. Foyda-zarar tannarxi — sotuv sanasigacha bo'lgan xaridlarning o'rtacha narxi (ombor R2 da).
+- 2026-09-26: PRD 5.5 FIN raqamlari qayta o'qildi (PDF jadvalida ustunlar surilgan): FIN-03 o'tkazma, FIN-04 kurs, FIN-05 qoldiq, FIN-06 kalendar, FIN-07 prognoz, FIN-08 kassa yopish, FIN-09 byudjet (R2), FIN-10 foyda-zarar, FIN-11 pul oqimi (R2), FIN-12 konsolidatsiya (R3).
 - 2026-09-24: Bitta kod bazasi, ko'p mijoz; moslashtirish tenant sozlamalari va modul kalitlari orqali.
 - 2026-09-24: Dev baza — Supabase bulutida (faqat soxta ma'lumot), lokal Docker yo'q.
 - 2026-09-24: Web kirish — email + parol + TOTP 2FA; telefon (Telegram Gateway) xodimlar uchun keyin.

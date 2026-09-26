@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AccountSheet, CancelSheet, TransactionSheet, TransferSheet } from "./forms";
+import { MoneyTabs } from "./tabs";
 
 export default async function MoneyPage({ searchParams }: PageProps<"/pul">) {
   const ctx = await requireCtx();
@@ -25,6 +26,7 @@ export default async function MoneyPage({ searchParams }: PageProps<"/pul">) {
 
   return (
     <div className="grid gap-6">
+      <MoneyTabs active="/pul" fullView={data.access.view === "all"} />
       <section className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight md:text-3xl">{t("title")}</h1>

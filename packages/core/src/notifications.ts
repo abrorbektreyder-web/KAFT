@@ -61,11 +61,29 @@ export async function deliverTelegram(db: Db, telegram: TelegramPort, tenantIds?
 const dmy = (iso: string) => `${iso.slice(8, 10)}.${iso.slice(5, 7)}.${iso.slice(0, 4)}`;
 type P = Record<string, string>;
 
+/** Tiyin → «−50 000 so‘m» / «−50 000 сум» (xabar matni uchun) */
+function fmtMoney(minor: string, currency: string, locale: 'uz' | 'ru') {
+  const n = Number(minor);
+  const abs = Math.abs(n);
+  const major = Math.floor(abs / 100).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  const cents = abs % 100 ? `,${String(abs % 100).padStart(2, '0')}` : '';
+  const sign = currency === 'UZS' ? (locale === 'ru' ? 'сум' : 'so‘m') : currency;
+  return `${n < 0 ? '−' : '+'}${major}${cents} ${sign}`;
+}
+
 // CORE-08: kadr eslatmalaridan tashqari turlar matni (uz/ru). Nomlar — foydalanuvchi ma'lumoti, tarjima qilinmaydi.
 const MESSAGES: Record<string, Record<'uz' | 'ru', { title: string; body: (p: P) => string }>> = {
   cp_contract_end: {
     uz: { title: 'Kontragent shartnomasi', body: (p) => `${p.name} — shartnoma №${p.number} muddati ${dmy(p.date!)} da tugaydi` },
     ru: { title: 'Договор с контрагентом', body: (p) => `${p.name} — срок договора №${p.number} истекает ${dmy(p.date!)}` },
+  },
+  cash_gap: {
+    uz: { title: 'Kassa uzilishi xavfi', body: (p) => `Prognoz: ${dmy(p.date!)} da pul yetmay qoladi — to‘lov kalendarini ko‘ring` },
+    ru: { title: 'Риск кассового разрыва', body: (p) => `Прогноз: ${dmy(p.date!)} не хватит денег — проверьте платёжный календарь` },
+  },
+  cash_diff: {
+    uz: { title: 'Kassa farqi', body: (p) => `${p.account} — ${dmy(p.date!)} yopishda farq ${fmtMoney(p.diff!, p.currency!, 'uz')}` },
+    ru: { title: 'Расхождение в кассе', body: (p) => `${p.account} — при закрытии ${dmy(p.date!)} расхождение ${fmtMoney(p.diff!, p.currency!, 'ru')}` },
   },
   sale_over_limit: {
     uz: { title: 'Kredit limiti', body: (p) => `${p.name} — ${p.number} sotuv kredit limitidan oshdi, tasdiqingiz kerak` },

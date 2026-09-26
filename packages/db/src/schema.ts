@@ -529,6 +529,8 @@ export const expenseCategories = pgTable('expense_categories', {
   nameRu: text('name_ru'),
   // in | out
   direction: text('direction').notNull(),
+  /** Boshqaruv foyda-zararga kiradimi (FIN-10): tovar xaridi (tannarx orqali) va kredit to'lovi — yo'q */
+  inPl: boolean('in_pl').notNull().default(true),
   isArchived: boolean('is_archived').notNull().default(false),
   createdAt: createdAt(),
 }, (t) => [
@@ -579,6 +581,53 @@ export const cashTransactions = pgTable('cash_transactions', {
   check('cash_transactions_kind_check', sql`${t.kind} in ('opening', 'income', 'expense', 'transfer')`),
   index('cash_transactions_account_idx').on(t.tenantId, t.accountId, t.occurredOn),
   index('cash_transactions_transfer_idx').on(t.transferId),
+]);
+
+// FIN-06: takrorlanuvchi (va bir martalik) rejali to'lovlar — to'lov kalendari va prognoz uchun (hujjat emas, reja).
+export const scheduledPayments = pgTable('scheduled_payments', {
+  id: id(),
+  tenantId: tenantId(),
+  companyId: uuid('company_id'),
+  name: text('name').notNull(),
+  // in | out
+  direction: text('direction').notNull(),
+  amount: bigint('amount', { mode: 'number' }).notNull(),
+  currency: char('currency', { length: 3 }).notNull(),
+  categoryId: uuid('category_id'),
+  counterpartyId: uuid('counterparty_id'),
+  startsOn: date('starts_on').notNull(),
+  // once | weekly | monthly
+  repeat: text('repeat').notNull(),
+  endsOn: date('ends_on'),
+  isActive: boolean('is_active').notNull().default(true),
+  createdBy: uuid('created_by'),
+  createdAt: createdAt(),
+}, (t) => [
+  foreignKey({ columns: [t.tenantId, t.companyId], foreignColumns: [companies.tenantId, companies.id] }).onDelete('cascade'),
+  foreignKey({ columns: [t.tenantId, t.categoryId], foreignColumns: [expenseCategories.tenantId, expenseCategories.id] }),
+  foreignKey({ columns: [t.tenantId, t.counterpartyId], foreignColumns: [counterparties.tenantId, counterparties.id] }).onDelete('cascade'),
+  check('scheduled_payments_direction_check', sql`${t.direction} in ('in', 'out')`),
+  check('scheduled_payments_repeat_check', sql`${t.repeat} in ('once', 'weekly', 'monthly')`),
+  check('scheduled_payments_amount_check', sql`${t.amount} > 0`),
+]);
+
+// FIN-08: kunlik kassa yopish — kassir sanagan haqiqiy qoldiq va tizimdagi qoldiq. Faqat yoziladi (o'zgarmaydi).
+export const cashClosings = pgTable('cash_closings', {
+  id: id(),
+  tenantId: tenantId(),
+  accountId: uuid('account_id').notNull(),
+  closingDate: date('closing_date').notNull(),
+  currency: char('currency', { length: 3 }).notNull(),
+  /** Tiyin/sentda: sanalgan, tizimdagi va farq (sanalgan − tizimdagi) */
+  counted: bigint('counted', { mode: 'number' }).notNull(),
+  system: bigint('system', { mode: 'number' }).notNull(),
+  diff: bigint('diff', { mode: 'number' }).notNull(),
+  note: text('note'),
+  closedBy: uuid('closed_by'),
+  createdAt: createdAt(),
+}, (t) => [
+  unique('cash_closings_account_date_key').on(t.tenantId, t.accountId, t.closingDate),
+  foreignKey({ columns: [t.tenantId, t.accountId], foreignColumns: [cashAccounts.tenantId, cashAccounts.id] }).onDelete('cascade'),
 ]);
 
 // FIN-03: Markaziy bank kurslari — hamma mijozlar uchun umumiy ma'lumot (tenant_id yo'q), faqat tizim yozadi.

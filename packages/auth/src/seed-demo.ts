@@ -9,6 +9,7 @@ import { acceptInvite, ConsoleMailer, createAuth, createInvitation } from './ind
 import { seedDemoMoney } from './demo-money.ts';
 import { seedDemoCounterparties } from './demo-counterparties.ts';
 import { seedDemoTrade } from './demo-trade.ts';
+import { seedDemoPlanning } from './demo-planning.ts';
 
 const envFile = resolve(import.meta.dirname, '../../../.env.local');
 if (!process.env.DATABASE_URL && existsSync(envFile)) process.loadEnvFile(envFile);
@@ -79,6 +80,9 @@ try {
 
   // Savdo va xarid: tovarlar, sotuvlar, qaytarish, to'lovlar, boshlang'ich qarzlar (R1, 9-hafta)
   await seedDemoTrade(db, ctx, { companyIds: [companies[0]!.id, companies[1]!.id], today });
+
+  // Rejali to'lovlar: ijara, oylik, soliq, kredit (R1, 10-hafta)
+  await seedDemoPlanning(db, ctx, { companyIds: [companies[0]!.id, companies[1]!.id], today });
 
   // Loginlar: taklif → parol (ega va HR)
   const logins: [string, string, string][] = [];

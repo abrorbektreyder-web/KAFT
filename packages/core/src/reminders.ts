@@ -1,6 +1,7 @@
 // HR-07: muddat eslatmalari va kunlik ish (worker har kuni 08:00 da chaqiradi).
 import { and, eq, inArray, isNull, schema, withTenant, type Db } from '@kaft/db';
 import { messageText, notify } from './notifications.ts';
+import { checkCashGap } from './planning.ts';
 import type { TelegramPort } from './telegram.ts';
 import { deliverTelegram } from './notifications.ts';
 
@@ -118,6 +119,9 @@ export async function runDailyJobs(db: Db, opts: { telegram: TelegramPort; on: s
           reminders += created.length;
         }
       }
+
+      // FIN-07: prognozda manfiy kun bo'lsa — egaga qizil bayroq (kuniga bir marta)
+      reminders += await checkCashGap(tx, opts.on);
 
       // Kuni kelgan o'tkazishlar (kiritilganda kelajak sanali bo'lgan)
       const transfers = await tx.select().from(schema.employmentEvents).where(and(
