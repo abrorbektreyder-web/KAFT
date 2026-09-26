@@ -377,7 +377,7 @@ export async function balances(db: Db, ctx: Ctx, opts: { on?: string; companyId?
 }
 
 /** Oxirgi operatsiyalar (yangisi tepada); «faqat o'ziniki» qamrovida — o'z kassalari. */
-export async function listTransactions(db: Db, ctx: Ctx, opts: { limit?: number; accountId?: string } = {}) {
+export async function listTransactions(db: Db, ctx: Ctx, opts: { limit?: number; accountId?: string; categoryId?: string; from?: string; to?: string } = {}) {
   const scope = await authorize(db, ctx, 'fin', 'view');
   const t = schema.cashTransactions;
   const a = schema.cashAccounts;
@@ -392,10 +392,13 @@ export async function listTransactions(db: Db, ctx: Ctx, opts: { limit?: number;
     .leftJoin(c, eq(c.id, t.categoryId))
     .where(and(
       opts.accountId ? eq(t.accountId, opts.accountId) : undefined,
+      opts.categoryId ? eq(t.categoryId, opts.categoryId) : undefined,
+      opts.from ? sql`${t.occurredOn} >= ${opts.from}` : undefined,
+      opts.to ? lte(t.occurredOn, opts.to) : undefined,
       scope === 'all' ? undefined : eq(a.responsibleUserId, ctx.userId),
     ))
     .orderBy(desc(t.occurredOn), desc(t.createdAt))
-    .limit(Math.min(opts.limit ?? 50, 500)));
+    .limit(Math.min(opts.limit ?? 50, 10_000)));
 }
 
 /** Interfeys uchun ruxsatlar xulosasi: nimani ko'rsatish/yashirish (tekshiruv baribir har amalda). */

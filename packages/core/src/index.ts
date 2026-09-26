@@ -16,3 +16,5 @@ export * from './finance.ts';
 export * from './counterparties.ts';
 export * from './trade.ts';
 export * from './planning.ts';
+export * from './company.ts';
+export * from './export.ts';

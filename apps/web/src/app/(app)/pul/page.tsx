@@ -1,4 +1,5 @@
 // «Pul» (FIN-01…05, R1): qoldiq har kassa, kompaniya va jami bo'yicha (so'mda va $ ekvivalentida), kirim/chiqim, o'tkazma.
+import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
 import { AlertTriangle, Wallet } from "lucide-react";
 import { requireCtx } from "@/lib/server";
@@ -105,7 +106,10 @@ export default async function MoneyPage({ searchParams }: PageProps<"/pul">) {
       </Card>
 
       <Card>
-        <CardHeader><CardTitle className="text-base">{t("recent")}</CardTitle></CardHeader>
+        <CardHeader className="flex items-center justify-between gap-2">
+          <CardTitle className="text-base">{t("recent")}</CardTitle>
+          <Link href="/pul/operatsiyalar" className="text-sm text-primary underline-offset-4 hover:underline">{t("opsTitle")}</Link>
+        </CardHeader>
         <CardContent className="grid">
           {data.transactions.length === 0 && <p className="text-sm text-muted-foreground">{t("noTransactions")}</p>}
           {data.transactions.map((tr) => {

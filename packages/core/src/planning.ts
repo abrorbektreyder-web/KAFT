@@ -6,7 +6,7 @@ import { and, asc, desc, eq, gte, inArray, isNull, lte, schema, sql, withTenant,
 import { authorize, deny, type Ctx } from './permissions.ts';
 import { messageText, notify } from './notifications.ts';
 import { CURRENCIES, rateOn, toUzs } from './finance.ts';
-import { computeDebts } from './trade.ts';
+import { computeDebtsMany } from './trade.ts';
 
 export type Repeat = 'once' | 'weekly' | 'monthly';
 export type PlanErrorCode = 'name' | 'direction' | 'amount' | 'currency' | 'date' | 'repeat' | 'notFound' | 'closed';
@@ -125,14 +125,13 @@ async function calendar(tx: Tx, on: string, to: string) {
   const conv = rates(tx, on);
   const items: CalendarItem[] = [];
   const overdueReceivable = { uzs: 0 as number | null, docs: 0 };
-  const cps = new Map<string, string>();
-  for (const t of [schema.sales, schema.purchases]) {
-    const rows = await tx.selectDistinct({ id: t.counterpartyId, name: schema.counterparties.name }).from(t)
-      .innerJoin(schema.counterparties, eq(schema.counterparties.id, t.counterpartyId)).where(isNull(t.cancelledAt));
-    rows.forEach((r) => cps.set(r.id, r.name));
-  }
-  for (const [cpId, cpName] of cps) {
-    const debts = await computeDebts(tx, cpId, on);
+  const all = await computeDebtsMany(tx, on);
+  const names = all.size
+    ? new Map((await tx.select({ id: schema.counterparties.id, name: schema.counterparties.name }).from(schema.counterparties)
+      .where(inArray(schema.counterparties.id, [...all.keys()]))).map((r) => [r.id, r.name]))
+    : new Map<string, string>();
+  for (const [cpId, debts] of all) {
+    const cpName = names.get(cpId) ?? '';
     for (const [side, direction] of [['receivable', 'in'], ['payable', 'out']] as const) {
       for (const d of debts[side].docs) {
         if (d.remaining <= 0) continue;

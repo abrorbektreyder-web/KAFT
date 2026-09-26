@@ -286,7 +286,7 @@ export async function getSale(db: Db, ctx: Ctx, id: string) {
   });
 }
 
-export async function listSales(db: Db, ctx: Ctx, opts: { counterpartyId?: string; status?: 'posted' | 'pending'; limit?: number } = {}) {
+export async function listSales(db: Db, ctx: Ctx, opts: { counterpartyId?: string; status?: 'posted' | 'pending'; from?: string; to?: string; limit?: number } = {}) {
   const scope = await authorize(db, ctx, 'sal', 'view');
   const s = schema.sales;
   return withTenant(db, ctx.tenantId, (tx) => tx.select({
@@ -295,6 +295,8 @@ export async function listSales(db: Db, ctx: Ctx, opts: { counterpartyId?: strin
   }).from(s).innerJoin(schema.counterparties, eq(schema.counterparties.id, s.counterpartyId)).where(and(
     opts.counterpartyId ? eq(s.counterpartyId, opts.counterpartyId) : undefined,
     opts.status ? eq(s.status, opts.status) : undefined,
+    opts.from ? sql`${s.docDate} >= ${opts.from}` : undefined,
+    opts.to ? lte(s.docDate, opts.to) : undefined,
     scope === 'all' ? undefined : eq(s.managerUserId, ctx.userId),
   )).orderBy(desc(s.docDate), desc(s.number)).limit(Math.min(opts.limit ?? 200, 1000)));
 }
@@ -380,14 +382,18 @@ export async function getPurchase(db: Db, ctx: Ctx, id: string) {
   });
 }
 
-export async function listPurchases(db: Db, ctx: Ctx, opts: { counterpartyId?: string; limit?: number } = {}) {
+export async function listPurchases(db: Db, ctx: Ctx, opts: { counterpartyId?: string; from?: string; to?: string; limit?: number } = {}) {
   await authorize(db, ctx, 'pur', 'view');
   const p = schema.purchases;
   return withTenant(db, ctx.tenantId, (tx) => tx.select({
     id: p.id, number: p.number, kind: p.kind, docDate: p.docDate, dueDate: p.dueDate, currency: p.currency, total: p.total, status: p.status,
     counterpartyId: p.counterpartyId, counterpartyName: schema.counterparties.name, companyId: p.companyId, cancelledAt: p.cancelledAt,
   }).from(p).innerJoin(schema.counterparties, eq(schema.counterparties.id, p.counterpartyId))
-    .where(opts.counterpartyId ? eq(p.counterpartyId, opts.counterpartyId) : undefined)
+    .where(and(
+      opts.counterpartyId ? eq(p.counterpartyId, opts.counterpartyId) : undefined,
+      opts.from ? sql`${p.docDate} >= ${opts.from}` : undefined,
+      opts.to ? lte(p.docDate, opts.to) : undefined,
+    ))
     .orderBy(desc(p.docDate), desc(p.number)).limit(Math.min(opts.limit ?? 200, 1000)));
 }
 
@@ -471,14 +477,20 @@ export interface DebtSide { docs: DebtDoc[]; totals: Record<string, number>; uzs
 
 type Payment = { amount: number; currency: string; rate: string | null; occurredOn: string; docId: string | null };
 
-async function allocate(tx: Tx, docs: DebtDoc[], payments: Payment[], on: string): Promise<DebtSide> {
-  const advance: Record<string, number> = {};
-  const rateCache = new Map<string, string | null>();
-  const rate = async (cur: string, date: string) => {
+type RateFn = (cur: string, date: string) => Promise<string | null>;
+
+/** Kurslar keshi — bir hisob davomida bir sana/valyuta uchun bitta so'rov */
+function rateCache(tx: Tx): RateFn {
+  const cache = new Map<string, string | null>();
+  return async (cur, date) => {
     const k = `${cur}:${date}`;
-    if (!rateCache.has(k)) rateCache.set(k, await rateOn(tx, cur, date));
-    return rateCache.get(k)!;
+    if (!cache.has(k)) cache.set(k, await rateOn(tx, cur, date));
+    return cache.get(k)!;
   };
+}
+
+async function allocate(rate: RateFn, docs: DebtDoc[], payments: Payment[], on: string): Promise<DebtSide> {
+  const advance: Record<string, number> = {};
   for (const pmt of payments) {
     let left = pmt.amount;
     const linked = pmt.docId ? docs.filter((d) => d.id === pmt.docId) : [];
@@ -519,29 +531,50 @@ async function allocate(tx: Tx, docs: DebtDoc[], payments: Payment[], on: string
   return { docs, totals, uzs, advance };
 }
 
-/** Kontragent bo'yicha ikki tomonlama qarz sanadagi holatda. */
-export async function computeDebts(tx: Tx, counterpartyId: string, on: string) {
+export type Debts = { receivable: DebtSide; payable: DebtSide };
+
+/** Ikki tomonlama qarz sanadagi holatda — barcha (yoki bitta) kontragent uchun uchta so'rov bilan. */
+export async function computeDebtsMany(tx: Tx, on: string, counterpartyId?: string): Promise<Map<string, Debts>> {
   const live = <T extends typeof schema.sales | typeof schema.purchases>(t: T) =>
-    and(eq(t.counterpartyId, counterpartyId), eq(t.status, 'posted'), isNull(t.cancelledAt), lte(t.docDate, on));
+    and(counterpartyId ? eq(t.counterpartyId, counterpartyId) : undefined, eq(t.status, 'posted'), isNull(t.cancelledAt), lte(t.docDate, on));
   const sales = await tx.select().from(schema.sales).where(live(schema.sales)).orderBy(asc(schema.sales.docDate), asc(schema.sales.number));
   const purchases = await tx.select().from(schema.purchases).where(live(schema.purchases)).orderBy(asc(schema.purchases.docDate), asc(schema.purchases.number));
   const c = schema.cashTransactions;
   const pays = await tx.select({
-    amount: c.amount, currency: c.currency, rate: c.rate, occurredOn: c.occurredOn, direction: c.direction, saleId: c.saleId, purchaseId: c.purchaseId,
-  }).from(c).where(and(eq(c.counterpartyId, counterpartyId), isNull(c.cancelledAt), lte(c.occurredOn, on), inArray(c.kind, ['income', 'expense'])))
-    .orderBy(asc(c.occurredOn), asc(c.createdAt));
+    counterpartyId: c.counterpartyId, amount: c.amount, currency: c.currency, rate: c.rate, occurredOn: c.occurredOn,
+    direction: c.direction, saleId: c.saleId, purchaseId: c.purchaseId,
+  }).from(c).where(and(
+    counterpartyId ? eq(c.counterpartyId, counterpartyId) : sql`${c.counterpartyId} is not null`,
+    isNull(c.cancelledAt), lte(c.occurredOn, on), inArray(c.kind, ['income', 'expense']),
+  )).orderBy(asc(c.occurredOn), asc(c.createdAt));
 
   const toDoc = (d: typeof sales[number] | typeof purchases[number], returned = 0): DebtDoc => ({
     id: d.id, kind: d.kind, number: d.number, docDate: d.docDate, dueDate: d.dueDate, currency: d.currency,
     total: d.total, returned, paid: 0, remaining: d.total - returned, overdue: false, overdueDays: 0,
   });
-  const returns = sales.filter((s) => s.kind === 'return');
-  const receivableDocs = sales.filter((s) => s.kind !== 'return')
-    .map((s) => toDoc(s, returns.filter((r) => r.returnOfId === s.id).reduce((sum, r) => sum + r.total, 0)));
-  const payableDocs = purchases.map((p) => toDoc(p));
-  const receivable = await allocate(tx, receivableDocs, pays.filter((p) => p.direction === 'in').map((p) => ({ ...p, docId: p.saleId })), on);
-  const payable = await allocate(tx, payableDocs, pays.filter((p) => p.direction === 'out').map((p) => ({ ...p, docId: p.purchaseId })), on);
-  return { receivable, payable };
+  const rate = rateCache(tx);
+  const ids = new Set([...sales.map((x) => x.counterpartyId), ...purchases.map((x) => x.counterpartyId), ...pays.map((x) => x.counterpartyId!)]);
+  const out = new Map<string, Debts>();
+  for (const id of ids) {
+    const cpSales = sales.filter((x) => x.counterpartyId === id);
+    const returns = cpSales.filter((x) => x.kind === 'return');
+    const receivableDocs = cpSales.filter((x) => x.kind !== 'return')
+      .map((x) => toDoc(x, returns.filter((r) => r.returnOfId === x.id).reduce((sum, r) => sum + r.total, 0)));
+    const payableDocs = purchases.filter((x) => x.counterpartyId === id).map((x) => toDoc(x));
+    const cpPays = pays.filter((x) => x.counterpartyId === id);
+    out.set(id, {
+      receivable: await allocate(rate, receivableDocs, cpPays.filter((x) => x.direction === 'in').map((x) => ({ ...x, docId: x.saleId })), on),
+      payable: await allocate(rate, payableDocs, cpPays.filter((x) => x.direction === 'out').map((x) => ({ ...x, docId: x.purchaseId })), on),
+    });
+  }
+  return out;
+}
+
+const emptySide = (): DebtSide => ({ docs: [], totals: {}, uzs: 0, advance: {} });
+
+/** Bitta kontragent bo'yicha ikki tomonlama qarz. */
+export async function computeDebts(tx: Tx, counterpartyId: string, on: string): Promise<Debts> {
+  return (await computeDebtsMany(tx, on, counterpartyId)).get(counterpartyId) ?? { receivable: emptySide(), payable: emptySide() };
 }
 
 export async function counterpartyDebts(db: Db, ctx: Ctx, counterpartyId: string, opts: { on?: string } = {}) {
@@ -560,17 +593,13 @@ export async function debtSummary(db: Db, ctx: Ctx, opts: { on?: string } = {}) 
   const on = opts.on ?? today();
   const scope = await authorize(db, ctx, 'cp', 'view');
   return withTenant(db, ctx.tenantId, async (tx) => {
-    const ids = new Set<string>();
-    for (const t of [schema.sales, schema.purchases]) {
-      const rows = await tx.selectDistinct({ id: t.counterpartyId }).from(t).where(isNull(t.cancelledAt));
-      rows.forEach((r) => ids.add(r.id));
-    }
-    const cps = ids.size ? await tx.select().from(schema.counterparties).where(and(
-      inArray(schema.counterparties.id, [...ids]), scope === 'all' ? undefined : eq(schema.counterparties.managerUserId, ctx.userId),
+    const all = await computeDebtsMany(tx, on);
+    const cps = all.size ? await tx.select().from(schema.counterparties).where(and(
+      inArray(schema.counterparties.id, [...all.keys()]), scope === 'all' ? undefined : eq(schema.counterparties.managerUserId, ctx.userId),
     )) : [];
     const out = [];
     for (const cp of cps) {
-      const d = await computeDebts(tx, cp.id, on);
+      const d = all.get(cp.id)!;
       const overdue = d.receivable.docs.filter((x) => x.overdue);
       if (!Object.keys(d.receivable.totals).length && !Object.keys(d.payable.totals).length) continue;
       out.push({

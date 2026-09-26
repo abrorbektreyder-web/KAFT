@@ -1,5 +1,8 @@
 // Bosh sahifa va qobiq uchun ma'lumot (server). Faqat R0'da mavjud haqiqiy ma'lumotlar.
-import { absenceCalendar, ForbiddenError, headcount, localize, localName, type Ctx } from "@kaft/core";
+import {
+  absenceCalendar, balances, can, cashForecast, debtSummary, finAccess, ForbiddenError, headcount, listChangeRequests, listSales, localize, localName,
+  profitAndLoss, type Ctx,
+} from "@kaft/core";
 import { and, desc, eq, isNull, schema, withTenant } from "@kaft/db";
 import { db } from "./server";
 import { todayIso } from "./format";
@@ -50,3 +53,33 @@ export async function loadTeam(ctx: Ctx, locale: string, companyId?: string) {
     throw e;
   }
 }
+
+/** R1 bloklari (pul, qarz, prognoz, oy natijasi, tasdiqlar) — pulni to'liq ko'ra oladiganlarga; aks holda null. */
+export async function loadMoneyOverview(ctx: Ctx) {
+  const access = await finAccess(db, ctx);
+  if (access.view !== "all") return null;
+  const on = todayIso();
+  const monthStart = `${on.slice(0, 8)}01`;
+  const [cpView, salApprove, cpApprove] = await withTenant(db, ctx.tenantId, (tx) => Promise.all([
+    can(tx, ctx.userId, "cp", "view"), can(tx, ctx.userId, "sal", "approve"), can(tx, ctx.userId, "cp", "approve"),
+  ]));
+  const [bal, forecast, debts, pl, pendingSales, changes] = await Promise.all([
+    balances(db, ctx, { on }),
+    cashForecast(db, ctx, { on }),
+    cpView ? debtSummary(db, ctx, { on }) : Promise.resolve([]),
+    profitAndLoss(db, ctx, { from: monthStart, to: on }),
+    salApprove === "all" ? listSales(db, ctx, { status: "pending" }) : Promise.resolve([]),
+    cpApprove === "all" ? listChangeRequests(db, ctx, { status: "pending" }) : Promise.resolve([]),
+  ]);
+  const sum = (xs: (number | null)[]) => xs.reduce<number>((s, x) => s + (x ?? 0), 0);
+  return {
+    on, monthStart,
+    total: bal.total,
+    forecast: { firstNegative: forecast.firstNegative, minBalance: forecast.minBalance },
+    receivableUzs: sum(debts.map((d) => d.receivableUzs)), overdueUzs: forecast.overdueReceivableUzs ?? 0,
+    payableUzs: sum(debts.map((d) => d.payableUzs)),
+    revenue: pl.totals.revenue, net: pl.totals.net,
+    pendingSales: pendingSales.filter((s) => !s.cancelledAt).length, pendingChanges: changes.length,
+  };
+}
+

@@ -197,6 +197,20 @@
       "when": 1790414832181,
       "tag": "0027_planning_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1790420763038,
+      "tag": "0028_profiles_staffing",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1790420765104,
+      "tag": "0029_profiles_staffing_rls",
+      "breakpoints": true
     }
   ]
 }

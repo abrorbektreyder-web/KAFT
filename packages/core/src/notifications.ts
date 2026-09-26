@@ -77,6 +77,10 @@ const MESSAGES: Record<string, Record<'uz' | 'ru', { title: string; body: (p: P)
     uz: { title: 'Kontragent shartnomasi', body: (p) => `${p.name} — shartnoma №${p.number} muddati ${dmy(p.date!)} da tugaydi` },
     ru: { title: 'Договор с контрагентом', body: (p) => `${p.name} — срок договора №${p.number} истекает ${dmy(p.date!)}` },
   },
+  doc_expiry: {
+    uz: { title: 'Hujjat muddati', body: (p) => `${p.title} — muddati ${dmy(p.date!)} da tugaydi` },
+    ru: { title: 'Срок документа', body: (p) => `${p.title} — срок истекает ${dmy(p.date!)}` },
+  },
   cash_gap: {
     uz: { title: 'Kassa uzilishi xavfi', body: (p) => `Prognoz: ${dmy(p.date!)} da pul yetmay qoladi — to‘lov kalendarini ko‘ring` },
     ru: { title: 'Риск кассового разрыва', body: (p) => `Прогноз: ${dmy(p.date!)} не хватит денег — проверьте платёжный календарь` },

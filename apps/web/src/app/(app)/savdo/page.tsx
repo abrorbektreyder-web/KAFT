@@ -9,11 +9,17 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ApproveSaleButton } from "./forms";
 import { DocTable } from "./doc-list";
+import { ExportMenu } from "@/components/export-menu";
 
-export default async function SalesPage() {
+const ISO = /^\d{4}-\d{2}-\d{2}$/;
+
+export default async function SalesPage({ searchParams }: PageProps<"/savdo">) {
   const ctx = await requireCtx();
   const [t, locale] = await Promise.all([getTranslations("trade"), getLocale()]);
-  const data = await loadSalesPage(ctx);
+  const sp = await searchParams;
+  const from = typeof sp.dan === "string" && ISO.test(sp.dan) ? sp.dan : undefined;
+  const to = typeof sp.gacha === "string" && ISO.test(sp.gacha) ? sp.gacha : undefined;
+  const data = await loadSalesPage(ctx, { from, to });
   if (!data) return <p className="text-muted-foreground">{t("noAccess")}</p>;
   const pending = data.sales.filter((s) => s.status === "pending" && !s.cancelledAt);
 
@@ -22,9 +28,12 @@ export default async function SalesPage() {
       <section className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight md:text-3xl">{t("sales")}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{t("salesSubtitle")}</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {from || to ? <>{t("salesPeriod", { from: from ? dmy(from) : "…", to: to ? dmy(to) : "…" })} · <Link href="/savdo" className="underline">{t("sales")}</Link></> : t("salesSubtitle")}
+          </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <ExportMenu kind="sales" />
           <Button asChild variant="outline" className="h-10"><Link href="/savdo/tovarlar"><Package />{t("products")}</Link></Button>
           {data.access.salCreate && <Button asChild className="h-10"><Link href="/savdo/yangi"><Plus />{t("newSale")}</Link></Button>}
         </div>

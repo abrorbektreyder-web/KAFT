@@ -1,4 +1,5 @@
 // Boshqaruv foyda-zarar (FIN-10): tushum − tannarx − xarajatlar, oy va kompaniya bo'yicha, so'mda.
+import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
 import { localName } from "@kaft/core";
 import { requireCtx } from "@/lib/server";
@@ -120,10 +121,11 @@ export default async function PlPage({ searchParams }: PageProps<"/pul/foyda-zar
           <CardHeader><CardTitle className="text-base">{t("byCategory")}</CardTitle></CardHeader>
           <CardContent className="grid">
             {pl.expenses.map((e) => (
-              <div key={e.categoryId} className="flex items-center justify-between gap-3 border-t py-2.5 text-sm first:border-t-0">
-                <span>{localName(e, locale)}</span>
+              <Link key={e.categoryId} href={`/pul/operatsiyalar?modda=${e.categoryId}&dan=${from}&gacha=${to}`}
+                className="flex items-center justify-between gap-3 border-t py-2.5 text-sm first:border-t-0 hover:text-primary">
+                <span className="underline-offset-4 hover:underline">{localName(e, locale)}</span>
                 <span className="font-semibold tabular-nums">{m(e.amount)}</span>
-              </div>
+              </Link>
             ))}
           </CardContent>
         </Card>

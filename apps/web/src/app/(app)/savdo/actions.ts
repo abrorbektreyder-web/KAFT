@@ -21,7 +21,8 @@ function money(v: string, required: boolean) {
   return n;
 }
 
-async function run(fn: (ctx: Ctx) => Promise<Exclude<ActionResult, null> | void>): Promise<ActionResult> {
+/** `reload: false` — amaldan keyin boshqa sahifaga o'tiladi (joriy formani qayta chizish ortiqcha) */
+async function run(fn: (ctx: Ctx) => Promise<Exclude<ActionResult, null> | void>, opts: { reload?: boolean } = {}): Promise<ActionResult> {
   const ctx = await requireCtx();
   const t = await getTranslations("trade");
   let res: Exclude<ActionResult, null> | void;
@@ -34,7 +35,7 @@ async function run(fn: (ctx: Ctx) => Promise<Exclude<ActionResult, null> | void>
     return { ok: false, error: t("err_unknown") };
   }
   // Dinamik sahifalar: joriy sahifani yangi ma'lumot bilan qayta chizish (Next 16)
-  refresh();
+  if (opts.reload !== false) refresh();
   return res ?? { ok: true };
 }
 
@@ -60,7 +61,7 @@ export async function saveSale(_: ActionResult, f: FormData): Promise<ActionResu
       })),
     });
     return { ok: true, id: res.id, message: t(res.status === "pending" ? "salePending" : "saleCreated", { number: res.number }) };
-  });
+  }, { reload: false });
 }
 
 export async function savePurchase(_: ActionResult, f: FormData): Promise<ActionResult> {
@@ -72,7 +73,7 @@ export async function savePurchase(_: ActionResult, f: FormData): Promise<Action
       lines: lines(f).map((l) => ({ productId: l.productId, qty: l.qty, price: money(l.price.trim(), true)! })),
     });
     return { ok: true, id: res.id, message: t("purchaseCreated", { number: res.number }) };
-  });
+  }, { reload: false });
 }
 
 export async function saveReturn(_: ActionResult, f: FormData): Promise<ActionResult> {

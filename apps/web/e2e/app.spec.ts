@@ -180,3 +180,25 @@ test("kassa yopish: kassir haqiqiy qoldiqni kiritadi, farq ko‘rinadi (FIN-08)"
   await expect(page.getByRole("link", { name: "Prognoz" })).toHaveCount(0);
 });
 
+test("shtat jadvali: HR rejadagi va bo‘sh o‘rinlarni ko‘radi (HR-09)", async ({ page }) => {
+  await login(page);
+  await page.goto("/kadrlar");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Shtat jadvali");
+  const row = page.getByRole("row", { name: /Kassir/ });
+  await expect(row).toBeVisible();
+  await expect(row.locator("td").nth(2)).toHaveText("2");
+  await expect(row.locator("td").nth(4)).toHaveText("2");
+});
+
+test("eksport: ruxsat doirasida CSV yuklanadi, ruxsatsizga — 403 (CORE-11)", async ({ page }) => {
+  await login(page, KASSIR);
+  const ok = await page.request.get("/eksport/counterparties?format=csv");
+  expect(ok.status()).toBe(200);
+  expect(ok.headers()["content-disposition"]).toContain(".csv");
+  expect(await ok.text()).toContain("E2E hamkor");
+  await page.context().clearCookies();
+  await login(page);
+  const denied = await page.request.get("/eksport/transactions?format=xlsx");
+  expect(denied.status()).toBe(403);
+});
+

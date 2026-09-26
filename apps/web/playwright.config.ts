@@ -9,8 +9,9 @@ export default defineConfig({
   workers: 1,
   fullyParallel: false,
   retries: CI ? 1 : 0,
-  timeout: 90_000,
-  expect: { timeout: 20_000 },
+  // Lokalda dev baza xorijda (Supabase) — sahifa 10–20 s; CI'da baza yonida, standart qiymatlar yetadi
+  timeout: CI ? 90_000 : 180_000,
+  expect: { timeout: CI ? 20_000 : 45_000 },
   reporter: CI ? "list" : [["list"]],
   use: { baseURL: "http://localhost:3000", trace: "retain-on-failure" },
   projects: [

@@ -10,6 +10,7 @@ import { seedDemoMoney } from './demo-money.ts';
 import { seedDemoCounterparties } from './demo-counterparties.ts';
 import { seedDemoTrade } from './demo-trade.ts';
 import { seedDemoPlanning } from './demo-planning.ts';
+import { seedDemoCompany } from './demo-company.ts';
 
 const envFile = resolve(import.meta.dirname, '../../../.env.local');
 if (!process.env.DATABASE_URL && existsSync(envFile)) process.loadEnvFile(envFile);
@@ -83,6 +84,9 @@ try {
 
   // Rejali to'lovlar: ijara, oylik, soliq, kredit (R1, 10-hafta)
   await seedDemoPlanning(db, ctx, { companyIds: [companies[0]!.id, companies[1]!.id], today });
+
+  // Kompaniya pasporti, lavozimlar va shtat jadvali (R1, 11-hafta)
+  await seedDemoCompany(db, ctx, { companyIds: [companies[0]!.id, companies[1]!.id] });
 
   // Loginlar: taklif → parol (ega va HR)
   const logins: [string, string, string][] = [];

@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DocTable } from "../savdo/doc-list";
+import { ExportMenu } from "@/components/export-menu";
 
 const ISO = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -33,6 +34,7 @@ export default async function PurchasesPage({ searchParams }: PageProps<"/xarid"
           <p className="mt-1 text-sm text-muted-foreground">{t("purchasesSubtitle")}</p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <ExportMenu kind="purchases" />
           <Button asChild variant="outline" className="h-10"><Link href="/savdo/tovarlar"><Package />{t("products")}</Link></Button>
           {data.access.purCreate && <Button asChild className="h-10"><Link href="/xarid/yangi"><Plus />{t("newPurchase")}</Link></Button>}
         </div>

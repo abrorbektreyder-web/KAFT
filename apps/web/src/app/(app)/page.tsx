@@ -2,10 +2,10 @@
 // Pul/savdo/nazorat bloklari o'z relizida haqiqiy ma'lumot bilan ulanadi — hozir soxta raqam ko'rsatilmaydi.
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
-import { AlertTriangle, BellRing, CheckCircle2, Lock, UserX } from "lucide-react";
+import { AlertTriangle, BellRing, CheckCircle2, ChevronRight, Lock, Stamp, UserX } from "lucide-react";
 import { requireCtx } from "@/lib/server";
-import { loadShell, loadTeam } from "@/lib/dashboard";
-import { dmy, greetingKey, longDate, num, timeAgo, todayIso } from "@/lib/format";
+import { loadMoneyOverview, loadShell, loadTeam } from "@/lib/dashboard";
+import { dmy, greetingKey, longDate, money, num, timeAgo, todayIso } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -27,12 +27,28 @@ function Locked({ title, release, hint }: { title: string; release: string; hint
   );
 }
 
+/** Bosh sahifa raqami: bosilganda asos hujjatlar ro'yxati ochiladi (CTL-05). */
+function Stat({ href, label, value, sub, tone }: { href: string; label: string; value: string; sub?: string; tone?: "ok" | "warn" | "bad" }) {
+  const color = tone === "bad" ? "text-bad" : tone === "warn" ? "text-warn" : tone === "ok" ? "text-ok" : "";
+  return (
+    <Link href={href} className="group rounded-xl focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none">
+      <Card className="h-full transition-colors group-hover:border-primary/50">
+        <CardContent className="grid gap-1 pt-5">
+          <span className="flex items-center justify-between text-sm text-muted-foreground">{label}<ChevronRight className="size-4 opacity-0 transition-opacity group-hover:opacity-100" /></span>
+          <span className={`text-xl font-bold tabular-nums ${color}`}>{value}</span>
+          {sub && <span className="text-sm text-muted-foreground tabular-nums">{sub}</span>}
+        </CardContent>
+      </Card>
+    </Link>
+  );
+}
+
 export default async function HomePage({ searchParams }: PageProps<"/">) {
   const ctx = await requireCtx();
   const [t, tc, ts, locale] = await Promise.all([getTranslations("home"), getTranslations("common"), getTranslations("status"), getLocale()]);
   const { kompaniya } = await searchParams;
   const companyId = typeof kompaniya === "string" ? kompaniya : undefined;
-  const [shell, team] = await Promise.all([loadShell(ctx, locale), loadTeam(ctx, locale, companyId)]);
+  const [shell, team, fin] = await Promise.all([loadShell(ctx, locale), loadTeam(ctx, locale, companyId), loadMoneyOverview(ctx)]);
   const today = todayIso();
   const firstName = shell.user.name.split(" ")[0] ?? "";
   const scope = companyId
@@ -70,7 +86,35 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
         )}
       </section>
 
-      <Locked title={t("money")} release="R1" hint={t("moneyHint")} />
+      {fin && (
+        <section aria-labelledby="money" className="grid gap-3">
+          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <h2 id="money" className="text-lg font-semibold">{t("money")}</h2>
+            <span className="text-sm text-muted-foreground">{t("tapForDetails")}</span>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            <Stat href="/pul" label={t("moneyTotal")} value={fin.total.uzs != null ? money(fin.total.uzs, "UZS", locale) : "—"}
+              sub={fin.total.usd != null ? `≈ ${money(fin.total.usd, "USD", locale)}` : undefined} />
+            <Stat href="/pul/prognoz" label={t("forecast30")} tone={fin.forecast.firstNegative ? "bad" : "ok"}
+              value={fin.forecast.firstNegative ? t("gapOn", { date: dmy(fin.forecast.firstNegative) }) : t("noGap")}
+              sub={t("minBalance", { amount: money(fin.forecast.minBalance, "UZS", locale) })} />
+            <Stat href="/kontragentlar/qarzlar" label={t("receivable")} value={money(fin.receivableUzs, "UZS", locale)}
+              sub={fin.overdueUzs ? t("overdue", { amount: money(fin.overdueUzs, "UZS", locale) }) : undefined} tone={fin.overdueUzs ? "warn" : undefined} />
+            <Stat href="/kontragentlar/qarzlar" label={t("payable")} value={money(fin.payableUzs, "UZS", locale)} />
+            <Stat href={`/savdo?dan=${fin.monthStart}&gacha=${fin.on}`} label={t("monthRevenue")} value={money(fin.revenue, "UZS", locale)} />
+            <Stat href={`/pul/foyda-zarar?dan=${fin.monthStart}&gacha=${fin.on}`} label={t("monthNet")} value={money(fin.net, "UZS", locale)} tone={fin.net < 0 ? "bad" : undefined} />
+          </div>
+          {(fin.pendingSales > 0 || fin.pendingChanges > 0) && (
+            <Card className="border-warn/50">
+              <CardContent className="flex flex-wrap items-center gap-x-5 gap-y-2 pt-5 text-sm">
+                <span className="flex items-center gap-2 font-semibold"><Stamp className="size-4" />{t("approvals")}</span>
+                {fin.pendingSales > 0 && <Link href="/savdo" className="underline">{t("pendingSales", { count: fin.pendingSales })}</Link>}
+                {fin.pendingChanges > 0 && <Link href="/kontragentlar" className="underline">{t("pendingChanges", { count: fin.pendingChanges })}</Link>}
+              </CardContent>
+            </Card>
+          )}
+        </section>
+      )}
 
       <section aria-labelledby="directions">
         <h2 id="directions" className="mb-3 text-lg font-semibold">{t("directions")}</h2>
@@ -84,9 +128,6 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
               </CardContent>
             </Card>
           )}
-          <Locked title={t("sales")} release="R1" hint={t("salesHint")} />
-          <Locked title={t("finance")} release="R1" hint={t("financeHint")} />
-          <Locked title={t("clients")} release="R1" hint={t("clientsHint")} />
           <Locked title={t("operations")} release="R2" hint={t("operationsHint")} />
           <Locked title={t("marketing")} release="R1" hint={t("marketingHint")} />
         </div>

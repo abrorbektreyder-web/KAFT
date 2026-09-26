@@ -299,6 +299,41 @@ export const telegramLinkCodes = pgTable('telegram_link_codes', {
   index('telegram_link_codes_hash_idx').on(t.codeHash),
 ]);
 
+// CORE-12: kompaniya pasporti — strategik ma'lumot; kim ko'rishi sozlanadi (owner — faqat ega, managers — rahbarlar, all — hamma).
+export const companyProfiles = pgTable('company_profiles', {
+  tenantId: tenantId(),
+  companyId: uuid('company_id').notNull(),
+  industry: text('industry'),
+  businessModel: text('business_model'),
+  products: text('products'),
+  customerProfile: text('customer_profile'),
+  funnel: text('funnel'),
+  advantage: text('advantage'),
+  notSegment: text('not_segment'),
+  strategy: text('strategy'),
+  visibility: text('visibility').notNull().default('owner'),
+  updatedBy: uuid('updated_by'),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  primaryKey({ columns: [t.tenantId, t.companyId] }),
+  foreignKey({ columns: [t.tenantId, t.companyId], foreignColumns: [companies.tenantId, companies.id] }).onDelete('cascade'),
+  check('company_profiles_visibility_check', sql`${t.visibility} in ('owner', 'managers', 'all')`),
+]);
+
+// HR-09: shtat jadvali — bo'lim va lavozim bo'yicha rejadagi o'rinlar soni (haqiqiy — xodimlardan hisoblanadi).
+export const staffingPlans = pgTable('staffing_plans', {
+  tenantId: tenantId(),
+  departmentId: uuid('department_id').notNull(),
+  positionId: uuid('position_id').notNull(),
+  planned: integer('planned').notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  primaryKey({ columns: [t.tenantId, t.departmentId, t.positionId] }),
+  foreignKey({ columns: [t.tenantId, t.departmentId], foreignColumns: [departments.tenantId, departments.id] }).onDelete('cascade'),
+  foreignKey({ columns: [t.tenantId, t.positionId], foreignColumns: [positions.tenantId, positions.id] }).onDelete('cascade'),
+  check('staffing_plans_planned_check', sql`${t.planned} >= 0`),
+]);
+
 // ---------------------------------------------------------------- Kontragentlar (CP, R1)
 
 // CP-01/02/05: yagona kontragent kartasi — butun tenant (holding) uchun umumiy; bir kontragentda bir nechta rol.

@@ -1,6 +1,7 @@
 // DOC-01/02, HR-08: hujjatlar va maxfiylik darajasi (ochiq / bo'lim / maxfiy).
 import { and, eq, schema, withTenant, type Db, type Tx } from '@kaft/db';
 import { authorize, can, deny, type Ctx } from './permissions.ts';
+import { messageText, notify } from './notifications.ts';
 import type { Scope } from './roles.ts';
 import type { FileStorage } from './storage/index.ts';
 
@@ -102,3 +103,33 @@ export async function readDocument(db: Db, storage: FileStorage, ctx: Ctx, id: s
   const { storageKey, tenantId: _t, ...meta } = doc;
   return { meta, data: await storage.get(storageKey) };
 }
+
+// ---------------------------------------------------------------- DOC-03: muddatli hujjat eslatmasi
+
+export const DOC_EXPIRY_LEAD = 30;
+
+/** Kunlik ish (tenant ichida): muddati 30 kundan keyin tugaydigan hujjatlar — yuklagan va hujjatlarni boshqaruvchilarga,
+ *  faqat hujjatni ko'ra oladiganlarga (maxfiy xodim hujjati — maxfiy ma'lumot huquqi borlarga). */
+export async function documentExpiryReminders(tx: Tx, tenantId: string, on: string) {
+  const due = new Date(Date.parse(on) + DOC_EXPIRY_LEAD * 86_400_000).toISOString().slice(0, 10);
+  const docs = await tx.select().from(schema.documents).where(eq(schema.documents.expiresOn, due));
+  if (!docs.length) return 0;
+  const managers = await tx.selectDistinct({ id: schema.users.id }).from(schema.users)
+    .innerJoin(schema.userRoles, eq(schema.userRoles.userId, schema.users.id))
+    .innerJoin(schema.rolePermissions, eq(schema.rolePermissions.roleId, schema.userRoles.roleId))
+    .where(and(eq(schema.rolePermissions.module, 'doc'), eq(schema.rolePermissions.action, 'update'), eq(schema.rolePermissions.scope, 'all'), eq(schema.users.isBlocked, false)));
+  const candidates = [...new Set([...managers.map((m) => m.id), ...docs.map((d) => d.uploadedBy).filter((x): x is string => !!x)])];
+  const viewers = new Map<string, Viewer>();
+  for (const userId of candidates) viewers.set(userId, await viewer(tx, { tenantId, userId }));
+  let created = 0;
+  for (const d of docs) {
+    const to = candidates.filter((id) => canSee(d, viewers.get(id)!));
+    if (!to.length) continue;
+    const params = { title: d.title, date: d.expiresOn! };
+    created += (await notify(tx, to, {
+      kind: 'doc_expiry', ...messageText('doc_expiry', params, 'uz'), params, link: `/hujjatlar/${d.id}`, dedupeKey: `doc_expiry:${d.id}:${d.expiresOn}`,
+    })).length;
+  }
+  return created;
+}
+

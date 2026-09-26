@@ -22,7 +22,10 @@
     "hidePassword": "Parolni yashirish",
     "save": "Saqlash",
     "saved": "Saqlandi",
-    "choose": "Tanlang"
+    "choose": "Tanlang",
+    "export": "Eksport",
+    "exportExcel": "Excel (.xlsx)",
+    "exportCsv": "CSV"
   },
   "nav": {
     "main": "Asosiy",
@@ -45,7 +48,8 @@
     "settings": "Sozlamalar",
     "soon": "tez orada",
     "soonShort": "tez",
-    "inRelease": "{release} relizida"
+    "inRelease": "{release} relizida",
+    "passport": "Kompaniya pasporti"
   },
   "auth": {
     "loginTitle": "Kirish",
@@ -124,7 +128,22 @@
     "allAtWork": "Bugun hamma ishda.",
     "until": "{date} gacha",
     "lockedFooter": "Qulflangan bloklar o‘z relizida haqiqiy ma’lumot bilan ochiladi.",
-    "searchHint": "Qidiruv — xodim va hujjatlar bo‘yicha."
+    "searchHint": "Qidiruv — xodim va hujjatlar bo‘yicha.",
+    "moneyTotal": "Jami pul",
+    "forecast30": "30 kunlik prognoz",
+    "gapOn": "{date} da pul yetmay qoladi",
+    "noGap": "Kassa uzilishi kutilmaydi",
+    "minBalance": "Eng past: {amount}",
+    "receivable": "Bizga qarz",
+    "overdue": "muddati o‘tgan: {amount}",
+    "payable": "Bizning qarz",
+    "monthRevenue": "Bu oy tushum",
+    "monthNet": "Bu oy sof foyda",
+    "approvals": "Tasdiqingizni kutmoqda",
+    "noApprovals": "Tasdiq kutayotgan narsa yo‘q",
+    "pendingSales": "Limitdan oshgan sotuvlar: {count}",
+    "pendingChanges": "O‘zgartirish so‘rovlari: {count}",
+    "tapForDetails": "Raqamni bosing — asos hujjatlar ochiladi"
   },
   "status": {
     "active": "Ishda",
@@ -219,7 +238,13 @@
     "err_counterparty": "Kontragent topilmadi",
     "fDoc": "Hujjat (ixtiyoriy)",
     "fNoDoc": "Eng eski ochiq hujjatga",
-    "err_document": "Hujjat bu kontragentga yoki operatsiya turiga tegishli emas"
+    "err_document": "Hujjat bu kontragentga yoki operatsiya turiga tegishli emas",
+    "opsTitle": "Operatsiyalar",
+    "opsFilter": "Filtr",
+    "opsCategory": "Modda: {name}",
+    "opsPeriod": "{from} – {to}",
+    "opsEmpty": "Operatsiyalar topilmadi.",
+    "opsAll": "Filtrni olib tashlash"
   },
   "cp": {
     "title": "Kontragentlar",
@@ -433,7 +458,14 @@
     "err_side": "Kim qarzdorligini tanlang",
     "err_forbidden": "Bu amal uchun ruxsatingiz yo‘q",
     "err_file": "Excel faylni tanlang",
-    "err_unknown": "Saqlanmadi. Qayta urinib ko‘ring."
+    "err_unknown": "Saqlanmadi. Qayta urinib ko‘ring.",
+    "debtsTitle": "Qarzlar",
+    "debtsSubtitle": "Kim bizga qarz va biz kimga qarzmiz — hujjat va to‘lovlardan hisoblangan",
+    "colReceivable": "Bizga qarz",
+    "colPayable": "Bizning qarz",
+    "colOverdue": "Kechikish",
+    "days": "{count} kun",
+    "salesPeriod": "{from} – {to} davridagi sotuvlar"
   },
   "plan": {
     "tabBalance": "Qoldiq",
@@ -520,5 +552,44 @@
     "err_repeat": "Takrorlanishni tanlang",
     "err_notFound": "Topilmadi",
     "err_closed": "Bu kun uchun kassa allaqachon yopilgan"
+  },
+  "passport": {
+    "title": "Kompaniya pasporti",
+    "subtitle": "Biznesning strategik tavsifi — yangi rahbar va hamkorlar uchun bitta joyda",
+    "edit": "Tahrirlash",
+    "empty": "Pasport hali to‘ldirilmagan.",
+    "noAccess": "Bu kompaniya pasportini ko‘rishga ruxsatingiz yo‘q.",
+    "industry": "Soha",
+    "businessModel": "Biznes model",
+    "products": "Mahsulot va xizmatlar",
+    "customerProfile": "Mijoz profili",
+    "funnel": "Savdo voronkasi",
+    "advantage": "Raqobatdagi farqimiz",
+    "notSegment": "Biz ishlamaydigan segment",
+    "strategy": "Strategik yo‘nalishlar",
+    "visibility": "Kim ko‘radi",
+    "vis_owner": "Faqat ega",
+    "vis_managers": "Rahbarlar (ega, direktor, buxgalter, HR)",
+    "vis_all": "Barcha xodimlar",
+    "updated": "Yangilangan: {date}",
+    "company": "Kompaniya"
+  },
+  "staffing": {
+    "title": "Shtat jadvali",
+    "subtitle": "Bo‘limlar bo‘yicha rejadagi va haqiqiy lavozimlar, bo‘sh o‘rinlar",
+    "colDept": "Bo‘lim",
+    "colPosition": "Lavozim",
+    "colPlanned": "Rejada",
+    "colActual": "Amalda",
+    "colVacancies": "Bo‘sh",
+    "colOver": "Ortiqcha",
+    "total": "Jami",
+    "empty": "Shtat jadvali bo‘sh. Bo‘lim va lavozim uchun rejadagi o‘rinlar sonini kiriting.",
+    "setPlan": "Rejani belgilash",
+    "fDept": "Bo‘lim",
+    "fPosition": "Lavozim",
+    "fPlanned": "Rejadagi o‘rinlar soni",
+    "noAccess": "Kadrlarni ko‘rishga ruxsatingiz yo‘q.",
+    "maternityNote": "Dikretdagi xodim o‘z o‘rnini egallagan hisoblanadi; bo‘shaganlar hisobga olinmaydi."
   }
 }

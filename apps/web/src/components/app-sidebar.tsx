@@ -3,7 +3,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
-  Banknote, Box, Building2, CalendarClock, ClipboardCheck, FileText, Home, IdCard, Settings, ShieldAlert, ShoppingCart, Stamp, Target, Truck, Wallet,
+  Banknote, BookOpen, Box, Building2, CalendarClock, ClipboardCheck, FileText, Home, IdCard, Settings, ShieldAlert, ShoppingCart, Stamp, Target, Truck, Wallet,
 } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuBadge,
@@ -23,7 +23,7 @@ const NAV = [
     { href: "/ombor", key: "warehouse", icon: Box, soon: "R2" },
   ] },
   { group: "team", items: [
-    { href: "/kadrlar", key: "hr", icon: IdCard, soon: "tez" },
+    { href: "/kadrlar", key: "hr", icon: IdCard },
     { href: "/davomat", key: "attendance", icon: CalendarClock, soon: "R2" },
     { href: "/oylik", key: "payroll", icon: Banknote, soon: "R2" },
     { href: "/topshiriqlar", key: "tasks", icon: ClipboardCheck, soon: "R2" },
@@ -33,6 +33,7 @@ const NAV = [
     { href: "/nazorat", key: "control", icon: ShieldAlert, soon: "R2" },
     { href: "/qarorlar", key: "decisions", icon: Target, soon: "R3" },
     { href: "/hujjatlar", key: "documents", icon: FileText, soon: "tez" },
+    { href: "/pasport", key: "passport", icon: BookOpen },
   ] },
 ] as const;
 

@@ -1,7 +1,9 @@
 // «Kontragentlar» (CP-01/02, R1): ro'yxat, qidiruv, rol filtri, qo'shish, Excel import, ega uchun tasdiq so'rovlari.
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
-import { Search, Stamp } from "lucide-react";
+import { Scale, Search, Stamp } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ExportMenu } from "@/components/export-menu";
 import { COUNTERPARTY_ROLES, type CounterpartyRole } from "@kaft/core";
 import { requireCtx } from "@/lib/server";
 import { loadCounterpartyList } from "@/lib/counterparties";
@@ -16,7 +18,7 @@ import { ChangeList } from "./changes";
 
 export default async function CounterpartiesPage({ searchParams }: PageProps<"/kontragentlar">) {
   const ctx = await requireCtx();
-  const t = await getTranslations("cp");
+  const [t, tt] = await Promise.all([getTranslations("cp"), getTranslations("trade")]);
   const { q, rol } = await searchParams;
   const query = typeof q === "string" ? q : "";
   const role = typeof rol === "string" && (COUNTERPARTY_ROLES as readonly string[]).includes(rol) ? (rol as CounterpartyRole) : undefined;
@@ -32,6 +34,8 @@ export default async function CounterpartiesPage({ searchParams }: PageProps<"/k
           <p className="mt-1 text-sm text-muted-foreground">{t("subtitle")}</p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Button asChild variant="outline" className="h-10"><Link href="/kontragentlar/qarzlar"><Scale />{tt("debtsTitle")}</Link></Button>
+          <ExportMenu kind="counterparties" />
           {data.access.full && <ImportSheet />}
           {data.access.full && <ImportDebtsSheet />}
           {data.access.create && <CounterpartySheet users={data.users} canAssign={data.access.full} />}

@@ -2,6 +2,7 @@
 import { and, eq, inArray, isNull, schema, withTenant, type Db } from '@kaft/db';
 import { messageText, notify } from './notifications.ts';
 import { checkCashGap } from './planning.ts';
+import { documentExpiryReminders } from './documents.ts';
 import type { TelegramPort } from './telegram.ts';
 import { deliverTelegram } from './notifications.ts';
 
@@ -122,6 +123,8 @@ export async function runDailyJobs(db: Db, opts: { telegram: TelegramPort; on: s
 
       // FIN-07: prognozda manfiy kun bo'lsa — egaga qizil bayroq (kuniga bir marta)
       reminders += await checkCashGap(tx, opts.on);
+      // DOC-03: muddatli hujjatlar (30 kun oldin)
+      reminders += await documentExpiryReminders(tx, tenantId, opts.on);
 
       // Kuni kelgan o'tkazishlar (kiritilganda kelajak sanali bo'lgan)
       const transfers = await tx.select().from(schema.employmentEvents).where(and(

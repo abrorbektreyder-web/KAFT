@@ -25,10 +25,10 @@ const productOptions = async (ctx: Ctx) => (await listProducts(db, ctx)).map((p)
   id: p.id, name: p.name, unit: p.unit, currency: p.currency, prices: { retail: p.priceRetail, wholesale: p.priceWholesale, special: p.priceSpecial },
 }));
 
-export async function loadSalesPage(ctx: Ctx) {
+export async function loadSalesPage(ctx: Ctx, period?: { from?: string; to?: string }) {
   const access = await tradeAccess(ctx);
   if (!access.salView) return null;
-  return { access, sales: await listSales(db, ctx, { limit: 300 }) };
+  return { access, sales: await listSales(db, ctx, { limit: 300, ...period }) };
 }
 
 /** Yangi hujjat formasi: kompaniyalar, mos rolli kontragentlar (kartadagi to'lov muddati bilan), tovarlar. */

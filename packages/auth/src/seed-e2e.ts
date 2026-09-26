@@ -2,7 +2,7 @@
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createDb, schema, withTenant } from '@kaft/db';
-import { createCashAccount, createCounterparty, createEmployee, createProduct, createTenant, createUser, FakeTelegram, recordEvent, runDailyJobs } from '@kaft/core';
+import { createCashAccount, createCounterparty, createEmployee, createProduct, setStaffingPlan, createTenant, createUser, FakeTelegram, recordEvent, runDailyJobs } from '@kaft/core';
 import { acceptInvite, ConsoleMailer, createAuth, createInvitation } from './index.ts';
 
 const envFile = resolve(import.meta.dirname, '../../../.env.local');
@@ -48,6 +48,9 @@ try {
 
   await createCounterparty(db, ega, { name: 'E2E hamkor', roles: ['customer'], managerUserId: savdoId });
   await createCounterparty(db, ega, { name: 'E2E do‘kon', roles: ['customer'], managerUserId: savdoId });
+  // Shtat jadvali: E2E bo'limida 2 ta kassir o'rni (hali hech kim yo'q — 2 ta bo'sh o'rin)
+  const [kassirPos] = await withTenant(db, t, (tx) => tx.insert(schema.positions).values({ tenantId: t, companyId, name: 'Kassir' }).returning());
+  await setStaffingPlan(db, ega, { departmentId: deptId, positionId: kassirPos!.id, planned: 2 });
   await createProduct(db, ega, { name: 'E2E suv', unit: 'dona', prices: { retail: 5_000_00, wholesale: 4_000_00 } });
 
   for (const userId of [hrId, kassirId, savdoId]) {
