@@ -1,9 +1,9 @@
 "use client";
-import Link from "next/link";
+import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
-  Banknote, BookOpen, Box, Building2, CalendarClock, ClipboardCheck, FileText, Home, IdCard, Settings, ShieldAlert, ShoppingCart, Stamp, Target, Truck, Wallet,
+  Banknote, BookOpen, Box, Building2, Loader2, CalendarClock, ClipboardCheck, FileText, Home, IdCard, Settings, ShieldAlert, ShoppingCart, Stamp, Target, Truck, Wallet,
 } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuBadge,
@@ -37,6 +37,12 @@ const NAV = [
   ] },
 ] as const;
 
+/** Bosilgan bo'lim yuklanayotganini darhol ko'rsatadi (sekin ulanishda «qotib qoldi» taassuroti bo'lmasin) */
+function PendingHint() {
+  const { pending } = useLinkStatus();
+  return <Loader2 aria-hidden className={`ml-auto size-4 animate-spin transition-opacity delay-100 ${pending ? "opacity-100" : "opacity-0"}`} />;
+}
+
 export function AppSidebar({ brand, user }: { brand: string; user: { name: string; role: string } }) {
   const t = useTranslations("nav");
   const tc = useTranslations("common");
@@ -65,7 +71,7 @@ export function AppSidebar({ brand, user }: { brand: string; user: { name: strin
                       </SidebarMenuButton>
                     ) : (
                       <SidebarMenuButton asChild isActive={it.href === "/" ? pathname === "/" : pathname.startsWith(it.href)}>
-                        <Link href={it.href}><it.icon /><span>{label}</span></Link>
+                        <Link href={it.href}><it.icon /><span>{label}</span><PendingHint /></Link>
                       </SidebarMenuButton>
                     )}
                     {soon && <SidebarMenuBadge className="text-[10px] text-sidebar-foreground/60">{soon === "tez" ? t("soonShort") : soon}</SidebarMenuBadge>}
